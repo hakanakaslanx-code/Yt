@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Music Automation - Control Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #08090d;
+            --sidebar-bg: rgba(15, 16, 22, 0.8);
+            --accent-primary: #7000ff;
+            --accent-secondary: #00d4ff;
+            --glass-card: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 50px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(112, 0, 255, 0.1);
+            color: #fff;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: radial-gradient(circle at top right, rgba(112, 0, 255, 0.05), transparent);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 { font-size: 2rem; margin: 0; font-weight: 700; }
+
+        /* Stats Section */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--glass-card);
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 4px; height: 100%;
+            background: var(--accent-primary);
+            opacity: 0.5;
+        }
+
+        .stat-card h3 { margin: 0; font-size: 0.9rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card .value { font-size: 2.2rem; font-weight: 700; margin-top: 10px; color: #fff; }
+
+        /* Quick Gen Section */
+        .gen-box {
+            background: linear-gradient(135deg, rgba(112, 0, 255, 0.1), rgba(0, 212, 255, 0.05));
+            border: 1px solid rgba(112, 0, 255, 0.2);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        input {
+            flex: 1;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border-color);
+            padding: 15px 20px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--accent-primary); }
+
+        .btn-glow {
+            background: var(--accent-primary);
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(112, 0, 255, 0.4);
+            transition: 0.3s;
+        }
+
+        .btn-glow:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(112, 0, 255, 0.6);
+        }
+
+        /* Channel Grid */
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .channel-card {
+            background: var(--glass-card);
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .channel-card:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--accent-secondary);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-streaming { background: rgba(0, 255, 136, 0.1); color: #00ff88; }
+        .status-processing { background: rgba(255, 204, 0, 0.1); color: #ffcc00; animation: pulse 2s infinite; }
+        .status-offline { background: rgba(255, 62, 62, 0.1); color: #ff3e3e; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <span style="font-size: 2rem;">⚡</span> YT-Automation
+        </div>
+        <div class="nav-item active">🏠 Dashboard</div>
+        <div class="nav-item">📺 My Channels</div>
+        <div class="nav-item">🎵 Music Library</div>
+        <div class="nav-item">📹 Video Tasks</div>
+        <div class="nav-item">⚙️ Settings</div>
+        
+        <div style="margin-top: auto; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
+            <p style="font-size: 0.8rem; margin: 0; opacity: 0.6;">VPS Status</p>
+            <p style="font-size: 0.9rem; margin: 5px 0 0 0; color: #00ff88;">● Running Stable</p>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div>
+                <h1>System Pulse</h1>
+                <p style="opacity: 0.5; margin-top: 5px;">Managing {{ channels|length }} automated channels across Europe Node.</p>
+            </div>
+            <button class="btn-glow" style="background: rgba(255,255,255,0.05); box-shadow: none;">System Update</button>
+        </header>
+
+        <section class="stats-container">
+            <div class="stat-card">
+                <h3>Total Mastered Videos</h3>
+                <div class="value">{{ stats.total_videos }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>API Credits Remaining</h3>
+                <div class="value">{{ stats.credits_used }}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Streams</h3>
+                <div class="value">{{ stats.active_streams }}</div>
+            </div>
+        </section>
+
+        <section class="gen-box">
+            <h2 style="margin: 0; font-size: 1.4rem;">AI Video Forge</h2>
+            <p style="opacity: 0.6; font-size: 0.9rem;">Generate a high-fidelity music video and push to selected channels.</p>
+            <div class="input-group">
+                <input type="text" id="genre" placeholder="Describe the vibe (e.g., Cyberpunk Lofi, Epic Cinematic)">
+                <button class="btn-glow" onclick="generateMusic()">Forge Video</button>
+            </div>
+        </section>
+
+        {% if tasks %}
+        <div style="margin-bottom: 40px;">
+            <h3>Active Tasks</h3>
+            <div class="channel-grid">
+                {% for task in tasks %}
+                <div class="channel-card" style="border-left: 3px solid var(--accent-primary);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 style="margin: 0;">#{{ task.id }} {{ task.name }}</h4>
+                        <span class="status-badge status-{{ task.status|lower }}">{{ task.status }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <h3>Connected Channels</h3>
+        <div class="channel-grid">
+            {% for channel in channels %}
+            <div class="channel-card">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 1.1rem;">{{ channel.name }}</h4>
+                        <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.6;">{{ channel.subs }} Subscribers</p>
+                    </div>
+                    <span class="status-badge status-{{ channel.status|lower }}">{{ channel.status }}</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer;">Analytics</button>
+                    <button style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer;">Settings</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <script>
+        function generateMusic() {
+            const genre = document.getElementById('genre').value;
+            if(!genre) return alert('Please enter a vibe!');
+            
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({genre: genre})
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert('Success: ' + data.message);
+            });
+        }
+    </script>
+</body>
+</html>
