@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <style>
+        .creator-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 30px;
+        }
+        
+        .mode-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .mode-card:hover, .mode-card.selected {
+            border-color: var(--accent-primary);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .style-btn {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .style-btn.active {
+            background: var(--accent-primary);
+            color: black;
+            border: none;
+        }
+    </style>
+
+    <h1 style="margin: 0 0 10px 0; font-size: 2.2rem;">AI Video Studio</h1>
+    <p style="opacity: 0.6; margin-bottom: 40px;">Choose your production mode and let the AI agents do the work.</p>
+
+    <div class="creator-grid">
+        <!-- Main Creation Area -->
+        <div class="glass-card" style="padding: 40px;">
+            <h2 style="margin: 0;">Project Initialization</h2>
+            <p style="opacity: 0.6;">Describe the atmosphere of your music video below.</p>
+            
+            <textarea id="prompt" placeholder="Enter your prompt here... (e.g., A futuristic cyberpunk street with neon lights, slow-paced chill hop vibe)" 
+                      style="width: 100%; height: 120px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; border-radius: 12px; padding: 20px; font-size: 1.1rem; margin-top: 20px;"></textarea>
+
+            <div style="margin-top: 30px;">
+                <h4 style="margin-bottom: 15px;">Target Style</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="style-btn active" onclick="selectStyle(this, 'Cinematic')">Cinematic</button>
+                    <button class="style-btn" onclick="selectStyle(this, 'Anime')">Anime</button>
+                    <button class="style-btn" onclick="selectStyle(this, 'Cyberpunk')">Cyberpunk</button>
+                    <button class="style-btn" onclick="selectStyle(this, 'Realistic')">Realistic</button>
+                    <button class="style-btn" onclick="selectStyle(this, 'Digital Art')">Digital Art</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+                        <input type="checkbox" id="lyrics_toggle" checked> Auto Lyrics Sync
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+                        <input type="checkbox" id="avatar_toggle"> Add AI Avatar
+                    </label>
+                </div>
+                <button class="btn-glow" style="padding: 15px 40px; font-size: 1.1rem;" onclick="startForge()">Forge Masterpiece</button>
+            </div>
+        </div>
+
+        <!-- Sidebar / Recent Tasks -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="glass-card" style="padding: 20px;">
+                <h4 style="margin: 0 0 15px 0;">Production Mode</h4>
+                <div class="mode-card selected" style="margin-bottom: 15px;">
+                    <div style="font-weight: 600;">💎 Auto Mode</div>
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 5px;">One-click generation for all assets.</div>
+                </div>
+                <div class="mode-card">
+                    <div style="font-weight: 600;">🛠️ Manual Mode</div>
+                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 5px;">Fine-tune each step (Music/Art/Subtitles).</div>
+                </div>
+            </div>
+
+            <div class="glass-card" style="padding: 20px;">
+                <h4 style="margin: 0 0 15px 0;">Recent Activity</h4>
+                <div id="task-list" style="display: flex; flex-direction: column; gap: 15px;">
+                    {% for task in tasks %}
+                    <div style="font-size: 0.85rem; border-left: 2px solid var(--accent-primary); padding-left: 10px;">
+                        <div>{{ task.name }}</div>
+                        <div style="color: var(--accent-primary); font-size: 0.75rem;">{{ task.status }}</div>
+                    </div>
+                    {% else %}
+                    <p style="opacity: 0.4; font-size: 0.8rem;">No active projects.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStyle = 'Cinematic';
+
+        function selectStyle(btn, style) {
+            document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentStyle = style;
+        }
+
+        function startForge() {
+            const prompt = document.getElementById('prompt').value;
+            if (!prompt) return alert('Please describe your vision!');
+
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    genre: prompt,
+                    style: currentStyle,
+                    lyrics: document.getElementById('lyrics_toggle').checked,
+                    avatar: document.getElementById('avatar_toggle').checked
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Production started! Your AI Agent is working...');
+                    location.reload();
+                }
+            });
+        }
+    </script>
+{% endblock %}

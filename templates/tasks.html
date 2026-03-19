@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Video Tasks{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>📹 Video Tasks</h1>
+        <p>All generated videos. Download, send to Live Stream, or upload to YouTube.</p>
+    </div>
+</div>
+
+{% if tasks %}
+<div style="display:flex;flex-direction:column;gap:10px;">
+    {% for task in tasks %}
+    <div class="glass-card" style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;">
+        <div>
+            <strong>#{{ task.id }} — {{ task.name }}</strong><br>
+            <span style="font-size:0.83rem;{% if 'Success' in task.status or 'Uploaded' in task.status %}color:#00ff88{% elif 'Error' in task.status or 'Failed' in task.status %}color:#ff4444{% else %}color:#ffaa00{% endif %};">
+                {{ task.status }}
+            </span>
+            {% if task.yt_url %}
+            &nbsp;·&nbsp;<a href="{{ task.yt_url }}" target="_blank" style="font-size:0.8rem;color:var(--accent2);">▶ YouTube</a>
+            {% endif %}
+        </div>
+        <div style="display:flex;gap:8px;">
+            {% if task.file %}
+            <a href="/download/{{ task.file }}" class="btn-primary" style="padding:8px 14px;font-size:0.82rem;">⬇ Download</a>
+            <a href="/stream?video={{ task.file }}" class="btn-ghost" style="padding:8px 14px;font-size:0.82rem;">🔴 Stream</a>
+            {% if not task.yt_url %}
+            <button class="btn-ghost" style="padding:8px 14px;font-size:0.82rem;background:rgba(255,0,0,0.12);border-color:rgba(255,0,0,0.3);color:#ff4444;" onclick="uploadTask({{ task.id }},'{{ task.file }}')">▲ Upload</button>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No videos yet</h3>
+    <p>Go to Dashboard → Forge Video to start generating.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function uploadTask(id, file) {
+        if (!confirm('Upload to YouTube as Private?')) return;
+        fetch('/api/upload', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({task_id: id, file: file})
+        }).then(r=>r.json()).then(d=>{ alert(d.message||d.error); location.reload(); });
+    }
+</script>
+{% endblock %}

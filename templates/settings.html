@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>⚙️ Settings</h1>
+        <p>Configure your API keys and system credentials.</p>
+    </div>
+</div>
+
+{% if saved %}<div class="msg-success">✅ Settings saved!</div>{% endif %}
+
+<form method="POST" action="/settings" style="max-width:680px;">
+    <div class="glass-card" style="margin-bottom:20px;">
+        <h2>🎵 Music Generation (Suno via Kie.ai)</h2>
+        <p style="opacity:0.5;font-size:0.83rem;margin-top:4px;">Get your key from <a href="https://kie.ai" target="_blank" style="color:var(--accent2);">kie.ai</a></p>
+        <label class="form-label">KIE_API_KEY</label>
+        <input class="form-input" type="password" name="kie_key" value="{{ kie_key or '' }}" placeholder="Bearer token...">
+    </div>
+
+    <div class="glass-card" style="margin-bottom:20px;">
+        <h2>🎨 Image Generation (Replicate / Flux)</h2>
+        <p style="opacity:0.5;font-size:0.83rem;margin-top:4px;">Get your token from <a href="https://replicate.com" target="_blank" style="color:var(--accent2);">replicate.com</a></p>
+        <label class="form-label">REPLICATE_API_TOKEN</label>
+        <input class="form-input" type="password" name="replicate_key" value="{{ replicate_key or '' }}" placeholder="r8_...">
+    </div>
+
+    <div class="glass-card" style="margin-bottom:24px;">
+        <h2>▶ YouTube Integration</h2>
+        <p style="opacity:0.5;font-size:0.83rem;margin-top:4px;">OAuth2 via <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent2);">Google Cloud Console</a></p>
+        {% if yt_connected %}
+        <p style="color:#00ff88;margin-top:14px;">✅ YouTube account connected</p>
+        <a href="/logout/youtube" style="font-size:0.83rem;color:#ff4444;">Disconnect account</a>
+        {% else %}
+        <div style="margin-top:14px;">
+            <a href="/login/youtube" class="btn-primary" style="text-decoration:none;display:inline-block;">▶ Connect YouTube</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <button class="btn-primary" type="submit">💾 Save Settings</button>
+</form>
+{% endblock %}

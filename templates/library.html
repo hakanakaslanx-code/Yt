@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Music Library{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>🎵 Music Library</h1>
+        <p>All AI-generated audio tracks. Preview or download.</p>
+    </div>
+</div>
+
+{% if tracks %}
+<div style="display:flex;flex-direction:column;gap:10px;">
+    {% for track in tracks %}
+    <div class="glass-card" style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;">
+        <div>
+            <strong style="font-size:0.95rem;">{{ track.name }}</strong>
+            <span style="opacity:0.4;font-size:0.8rem;margin-left:10px;">{{ track.size }}</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;">
+            <audio controls src="/outputs/{{ track.name }}" style="height:30px;border-radius:8px;"></audio>
+            <a href="/download/{{ track.name }}" class="btn-primary" style="padding:8px 16px;font-size:0.82rem;">⬇ Download</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No audio tracks yet</h3>
+    <p>Go to Dashboard → Forge Video to generate your first AI track.</p>
+</div>
+{% endif %}
+{% endblock %}

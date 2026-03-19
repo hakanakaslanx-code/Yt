@@ -1,301 +1,204 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Music Automation - Control Panel</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #08090d;
-            --sidebar-bg: rgba(15, 16, 22, 0.8);
-            --accent-primary: #7000ff;
-            --accent-secondary: #00d4ff;
-            --glass-card: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-main: #e0e0e0;
-        }
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Outfit', sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+{% block head %}
+<style>
+    .gen-box {
+        background: linear-gradient(135deg, rgba(112,0,255,0.1), rgba(0,212,255,0.05));
+        border: 1px solid rgba(112,0,255,0.22);
+        border-radius: 20px;
+        padding: 28px;
+        margin-bottom: 30px;
+    }
 
-        /* Sidebar Styling */
-        .sidebar {
-            width: 260px;
-            background: var(--sidebar-bg);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 30px 20px;
-        }
+    .style-pills { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+    .style-pill {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .style-pill.active, .style-pill:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 50px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+    .input-row { display: flex; gap: 12px; margin-top: 14px; }
 
-        .nav-item {
-            padding: 12px 15px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 500;
-            color: rgba(255,255,255,0.6);
-        }
+    .options-row {
+        display: flex;
+        gap: 22px;
+        margin-top: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
 
-        .nav-item:hover, .nav-item.active {
-            background: rgba(112, 0, 255, 0.1);
-            color: #fff;
-            border-left: 3px solid var(--accent-primary);
-        }
+    .toggle-label { display: flex; align-items: center; gap: 8px; font-size: 0.83rem; opacity: 0.8; cursor: pointer; }
 
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-            background: radial-gradient(circle at top right, rgba(112, 0, 255, 0.05), transparent);
-        }
+    .task-row {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 9px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: fadeUp 0.3s ease;
+    }
+</style>
+{% endblock %}
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>System Pulse</h1>
+        <p>Managing {{ channels|length }} automated channels across Europe Node.</p>
+    </div>
+    <button class="btn-ghost" onclick="refreshStatus()">↻ Refresh</button>
+</div>
 
-        .header h1 { font-size: 2rem; margin: 0; font-weight: 700; }
+<!-- Stats -->
+<div class="grid-3">
+    <div class="stat-card">
+        <h3>Total Mastered Videos</h3>
+        <div class="val" id="stat-videos">{{ stats.total_videos }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>API Credits Remaining</h3>
+        <div class="val" id="stat-credits">{{ stats.credits_used }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Active Streams</h3>
+        <div class="val" id="stat-streams">{{ stats.active_streams }}</div>
+    </div>
+</div>
 
-        /* Stats Section */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 25px;
-            margin-bottom: 40px;
-        }
+<!-- Forge Box -->
+<div class="gen-box">
+    <h2>🎬 AI Video Forge</h2>
+    <p style="opacity:0.55;font-size:0.88rem;margin-top:4px;">Generate a high-fidelity music video and push to your channels.</p>
 
-        .stat-card {
-            background: var(--glass-card);
-            border: 1px solid var(--border-color);
-            padding: 25px;
-            border-radius: 20px;
-            position: relative;
-            overflow: hidden;
-        }
+    <div class="style-pills">
+        <div class="style-pill active" onclick="selectStyle(this,'Cinematic')">Cinematic</div>
+        <div class="style-pill" onclick="selectStyle(this,'Anime')">Anime</div>
+        <div class="style-pill" onclick="selectStyle(this,'Cyberpunk')">Cyberpunk</div>
+        <div class="style-pill" onclick="selectStyle(this,'Realistic')">Realistic</div>
+        <div class="style-pill" onclick="selectStyle(this,'Digital Art')">Digital Art</div>
+    </div>
 
-        .stat-card::after {
-            content: '';
-            position: absolute;
-            top: 0; right: 0;
-            width: 4px; height: 100%;
-            background: var(--accent-primary);
-            opacity: 0.5;
-        }
+    <div class="input-row">
+        <input class="form-input" type="text" id="genre" placeholder="Describe the vibe (e.g., Cyberpunk Lofi, Epic Cinematic)">
+        <button class="btn-primary" onclick="forgeVideo()" id="forge-btn">⚡ Forge Video</button>
+    </div>
 
-        .stat-card h3 { margin: 0; font-size: 0.9rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-card .value { font-size: 2.2rem; font-weight: 700; margin-top: 10px; color: #fff; }
-
-        /* Quick Gen Section */
-        .gen-box {
-            background: linear-gradient(135deg, rgba(112, 0, 255, 0.1), rgba(0, 212, 255, 0.05));
-            border: 1px solid rgba(112, 0, 255, 0.2);
-            padding: 30px;
-            border-radius: 20px;
-            margin-bottom: 40px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        input {
-            flex: 1;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--border-color);
-            padding: 15px 20px;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        input:focus { border-color: var(--accent-primary); }
-
-        .btn-glow {
-            background: var(--accent-primary);
-            color: #fff;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(112, 0, 255, 0.4);
-            transition: 0.3s;
-        }
-
-        .btn-glow:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(112, 0, 255, 0.6);
-        }
-
-        /* Channel Grid */
-        .channel-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .channel-card {
-            background: var(--glass-card);
-            border: 1px solid var(--border-color);
-            padding: 25px;
-            border-radius: 20px;
-            transition: 0.3s;
-        }
-
-        .channel-card:hover {
-            background: rgba(255,255,255,0.05);
-            border-color: var(--accent-secondary);
-        }
-
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .status-streaming { background: rgba(0, 255, 136, 0.1); color: #00ff88; }
-        .status-processing { background: rgba(255, 204, 0, 0.1); color: #ffcc00; animation: pulse 2s infinite; }
-        .status-offline { background: rgba(255, 62, 62, 0.1); color: #ff3e3e; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-    </style>
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="logo">
-            <span style="font-size: 2rem;">⚡</span> YT-Automation
-        </div>
-        <div class="nav-item active">🏠 Dashboard</div>
-        <div class="nav-item">📺 My Channels</div>
-        <div class="nav-item">🎵 Music Library</div>
-        <div class="nav-item">📹 Video Tasks</div>
-        <div class="nav-item">⚙️ Settings</div>
-        
-        <div style="margin-top: auto; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px;">
-            <p style="font-size: 0.8rem; margin: 0; opacity: 0.6;">VPS Status</p>
-            <p style="font-size: 0.9rem; margin: 5px 0 0 0; color: #00ff88;">● Running Stable</p>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        <header class="header">
-            <div>
-                <h1>System Pulse</h1>
-                <p style="opacity: 0.5; margin-top: 5px;">Managing {{ channels|length }} automated channels across Europe Node.</p>
-            </div>
-            <button class="btn-glow" style="background: rgba(255,255,255,0.05); box-shadow: none;">System Update</button>
-        </header>
-
-        <section class="stats-container">
-            <div class="stat-card">
-                <h3>Total Mastered Videos</h3>
-                <div class="value">{{ stats.total_videos }}</div>
-            </div>
-            <div class="stat-card">
-                <h3>API Credits Remaining</h3>
-                <div class="value">{{ stats.credits_used }}</div>
-            </div>
-            <div class="stat-card">
-                <h3>Active Streams</h3>
-                <div class="value">{{ stats.active_streams }}</div>
-            </div>
-        </section>
-
-        <section class="gen-box">
-            <h2 style="margin: 0; font-size: 1.4rem;">AI Video Forge</h2>
-            <p style="opacity: 0.6; font-size: 0.9rem;">Generate a high-fidelity music video and push to selected channels.</p>
-            <div class="input-group">
-                <input type="text" id="genre" placeholder="Describe the vibe (e.g., Cyberpunk Lofi, Epic Cinematic)">
-                <button class="btn-glow" onclick="generateMusic()">Forge Video</button>
-            </div>
-        </section>
-
-        {% if tasks %}
-        <div style="margin-bottom: 40px;">
-            <h3>Active Tasks</h3>
-            <div class="channel-grid">
-                {% for task in tasks %}
-                <div class="channel-card" style="border-left: 3px solid var(--accent-primary);">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 style="margin: 0;">#{{ task.id }} {{ task.name }}</h4>
-                        <span class="status-badge status-{{ task.status|lower }}">{{ task.status }}</span>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+    <div class="options-row">
+        <label class="toggle-label">
+            <input type="checkbox" id="toggle-lyrics" checked> Lyrics Sync
+        </label>
+        <label class="toggle-label">
+            <input type="checkbox" id="toggle-upload" {% if not yt_connected %}disabled{% endif %}> Auto Upload
+        </label>
+        {% if not yt_connected %}
+        <span style="font-size:0.75rem;opacity:0.38;">(Connect YouTube to enable)</span>
         {% endif %}
+    </div>
+</div>
 
-        <h3>Connected Channels</h3>
-        <div class="channel-grid">
-            {% for channel in channels %}
-            <div class="channel-card">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                    <div>
-                        <h4 style="margin: 0; font-size: 1.1rem;">{{ channel.name }}</h4>
-                        <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.6;">{{ channel.subs }} Subscribers</p>
-                    </div>
-                    <span class="status-badge status-{{ channel.status|lower }}">{{ channel.status }}</span>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer;">Analytics</button>
-                    <button style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer;">Settings</button>
-                </div>
+<!-- Task Queue -->
+<h3>⚙️ Active Production Queue</h3>
+<div id="task-feed" style="margin-bottom:36px;">
+    {% if tasks %}
+        {% for task in tasks %}
+        <div class="task-row">
+            <div>
+                <strong>#{{ task.id }} {{ task.name }}</strong>
+                {% if task.yt_url %}
+                <a href="{{ task.yt_url }}" target="_blank" style="font-size:0.78rem;color:var(--accent2);margin-left:10px;">▶ YouTube</a>
+                {% endif %}
             </div>
-            {% endfor %}
+            <span style="font-size:0.83rem;{% if 'Success' in task.status or 'Uploaded' in task.status %}color:#00ff88{% elif 'Error' in task.status %}color:#ff4444{% else %}color:#ffaa00{% endif %};">
+                {{ task.status }}
+            </span>
         </div>
-    </main>
+        {% endfor %}
+    {% else %}
+    <p style="opacity:0.38;font-size:0.85rem;">No active tasks. Start forging your first video! ⚡</p>
+    {% endif %}
+</div>
 
-    <script>
-        function generateMusic() {
-            const genre = document.getElementById('genre').value;
-            if(!genre) return alert('Please enter a vibe!');
-            
-            fetch('/api/generate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({genre: genre})
+<!-- Channels -->
+<h3>📺 Connected Channels</h3>
+<div class="grid-auto">
+    {% for ch in channels %}
+    <div class="glass-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+            <div>
+                <h2 style="font-size:1.05rem;">{{ ch.name }}</h2>
+                <p style="opacity:0.5;font-size:0.82rem;margin-top:4px;">{{ ch.subs }} Subscribers</p>
+            </div>
+            <span class="badge badge-{{ ch.status|lower }}">{{ ch.status }}</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-ghost" style="flex:1;">Analytics</button>
+            <button class="btn-ghost" style="flex:1;">Settings</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentStyle = 'Cinematic';
+
+    function selectStyle(el, style) {
+        document.querySelectorAll('.style-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        currentStyle = style;
+    }
+
+    function forgeVideo() {
+        const genre = document.getElementById('genre').value.trim();
+        if (!genre) return alert('Please describe the vibe first!');
+        const btn = document.getElementById('forge-btn');
+        btn.textContent = '⏳ Starting...'; btn.disabled = true;
+        fetch('/api/generate', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                genre: genre, style: currentStyle,
+                lyrics: document.getElementById('toggle-lyrics').checked,
+                auto_upload: document.getElementById('toggle-upload').checked
             })
-            .then(res => res.json())
-            .then(data => {
-                alert('Success: ' + data.message);
-            });
-        }
-    </script>
-</body>
-</html>
+        }).then(r=>r.json()).then(d=>{
+            btn.textContent = '⚡ Forge Video'; btn.disabled = false;
+            if (d.status === 'success') { document.getElementById('genre').value = ''; refreshStatus(); }
+        }).catch(()=>{ btn.textContent = '⚡ Forge Video'; btn.disabled = false; });
+    }
+
+    function refreshStatus() {
+        fetch('/api/status').then(r=>r.json()).then(d=>{
+            if (d.stats) {
+                document.getElementById('stat-videos').textContent = d.stats.total_videos;
+                document.getElementById('stat-credits').textContent = d.stats.credits_used;
+                document.getElementById('stat-streams').textContent = d.stats.active_streams;
+            }
+            if (d.tasks && d.tasks.length > 0) {
+                document.getElementById('task-feed').innerHTML = d.tasks.slice().reverse().map(t => {
+                    const cls = t.status.includes('Success')||t.status.includes('Uploaded') ? '#00ff88'
+                        : t.status.includes('Error')||t.status.includes('Failed') ? '#ff4444' : '#ffaa00';
+                    const yt = t.yt_url ? `<a href="${t.yt_url}" target="_blank" style="font-size:0.78rem;color:#00d4ff;margin-left:10px;">▶ YouTube</a>` : '';
+                    return `<div class="task-row"><div><strong>#${t.id} ${t.name}</strong>${yt}</div><span style="font-size:0.83rem;color:${cls};">${t.status}</span></div>`;
+                }).join('');
+            }
+        });
+    }
+
+    setInterval(refreshStatus, 5000);
+</script>
+{% endblock %}

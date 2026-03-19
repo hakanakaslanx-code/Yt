@@ -47,27 +47,44 @@ class MusicGenerator:
             return response.json()
         return None
 
-    def wait_and_download(self, task_id, output_name="output.mp3"):
+    def wait_and_download(self, task_id, output_name="output.mp3", max_retries=60):
         """
         Müzik bitene kadar bekler ve dosyayı indirir.
+        max_retries: en fazla 60 deneme (10 dakika).
         """
         print("Müzik hazırlanıyor, bekleniyor...")
-        while True:
-            status_data = self.check_status(task_id)
+        retries = 0
+        while retries < max_retries:
+            retries += 1
+            try:
+                status_data = self.check_status(task_id)
+            except Exception as e:
+                print(f"Status check error: {e}")
+                time.sleep(10)
+                continue
+
             if not status_data:
-                break
+                print("Status data boş, tekrar deneniyor...")
+                time.sleep(10)
+                continue
                 
             status = status_data.get("status")
             if status == "SUCCESS":
                 audio_url = status_data.get("audioUrl")
-                print(f"Müzik hazır! İndiriliyor: {audio_url}")
-                self.download_file(audio_url, output_name)
-                break
+                if audio_url:
+                    print(f"Müzik hazır! İndiriliyor: {audio_url}")
+                    self.download_file(audio_url, output_name)
+                else:
+                    print("HATA: audioUrl bulunamadı!")
+                return
             elif status == "FAILED":
                 print("Müzik üretimi başarısız oldu.")
-                break
+                return
             
-            time.sleep(10) # 10 saniye bekle
+            print(f"  Durum: {status} ({retries}/{max_retries})")
+            time.sleep(10)
+        
+        print("HATA: Zaman aşımı - müzik üretimi tamamlanamadı.")
 
     def download_file(self, url, filename):
         r = requests.get(url)

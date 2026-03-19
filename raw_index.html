@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Allone AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #08090d;
+            --sidebar-bg: rgba(15, 16, 22, 0.9);
+            --accent: #7000ff;
+            --accent2: #00d4ff;
+            --accent-yt: #ff0000;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e0e0e0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── SIDEBAR ───────────────────────────── */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            transition: 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(112, 0, 255, 0.1);
+            color: #fff;
+            border-left-color: var(--accent);
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 12px 0;
+        }
+
+        /* YouTube Connect */
+        .yt-block {
+            margin-top: 10px;
+            padding: 14px;
+            background: rgba(255, 0, 0, 0.05);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .yt-block.connected {
+            background: rgba(0, 255, 136, 0.05);
+            border-color: rgba(0, 255, 136, 0.2);
+        }
+
+        .btn-yt {
+            display: block;
+            background: var(--accent-yt);
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.82rem;
+            margin-top: 8px;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-yt:hover { opacity: 0.85; }
+
+        .vps-status {
+            margin-top: auto;
+            padding-top: 15px;
+        }
+
+        .vps-dot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.82rem;
+        }
+
+        /* ── MAIN CONTENT ──────────────────────── */
+        .main {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: radial-gradient(circle at 80% 10%, rgba(112,0,255,0.05), transparent 60%);
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 36px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            opacity: 0.5;
+            margin-top: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* ── CARDS ─────────────────────────────── */
+        .glass-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 25px;
+            transition: 0.2s;
+        }
+
+        .glass-card:hover { border-color: rgba(112,0,255,0.3); }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-bottom: 36px; }
+        .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; }
+
+        /* Stat card */
+        .stat-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 4px; height: 100%;
+            background: var(--accent);
+            opacity: 0.5;
+        }
+
+        .stat-card h3 { font-size: 0.82rem; opacity: 0.55; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card .val { font-size: 2.2rem; font-weight: 700; margin-top: 8px; color: #fff; }
+
+        /* Badges */
+        .badge { font-size: 0.72rem; padding: 4px 11px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
+        .badge-streaming { background: rgba(0,255,136,0.12); color: #00ff88; }
+        .badge-processing { background: rgba(255,204,0,0.12); color: #ffcc00; animation: pulse 2s infinite; }
+        .badge-offline { background: rgba(255,62,62,0.12); color: #ff3e3e; }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 12px 26px;
+            border-radius: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            box-shadow: 0 0 18px rgba(112,0,255,0.35);
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover { transform: scale(1.04); box-shadow: 0 0 28px rgba(112,0,255,0.55); }
+
+        .btn-ghost {
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+
+        /* Forms */
+        .form-label { display: block; font-size: 0.82rem; opacity: 0.65; margin: 16px 0 6px; }
+
+        .form-input {
+            width: 100%;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .form-input:focus { border-color: var(--accent); }
+
+        /* Flash messages */
+        .msg-success { background: rgba(0,255,136,0.08); color: #00ff88; border: 1px solid rgba(0,255,136,0.2); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.88rem; }
+        .msg-error { background: rgba(255,62,62,0.08); color: #ff4444; border: 1px solid rgba(255,62,62,0.2); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.88rem; }
+        .msg-warn { background: rgba(255,160,0,0.08); color: #ffaa00; border: 1px solid rgba(255,160,0,0.22); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.88rem; }
+
+        section-title { display: block; font-size: 1rem; font-weight: 600; opacity: 0.9; margin-bottom: 18px; }
+        h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+        h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; opacity: 0.9; }
+
+        .empty-state { text-align: center; padding: 70px 20px; opacity: 0.4; }
+        .empty-state h3 { font-size: 1.2rem; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation: fadeUp 0.3s ease; }
+    </style>
+    
+<style>
+    .gen-box {
+        background: linear-gradient(135deg, rgba(112,0,255,0.1), rgba(0,212,255,0.05));
+        border: 1px solid rgba(112,0,255,0.22);
+        border-radius: 20px;
+        padding: 28px;
+        margin-bottom: 30px;
+    }
+
+    .style-pills { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+    .style-pill {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .style-pill.active, .style-pill:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .input-row { display: flex; gap: 12px; margin-top: 14px; }
+
+    .options-row {
+        display: flex;
+        gap: 22px;
+        margin-top: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .toggle-label { display: flex; align-items: center; gap: 8px; font-size: 0.83rem; opacity: 0.8; cursor: pointer; }
+
+    .task-row {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 9px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: fadeUp 0.3s ease;
+    }
+</style>
+
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo"><span style="font-size:1.8rem">⚡</span> Allone AI</div>
+
+        <a href="/"        class="nav-item ">🏠 Dashboard</a>
+        <a href="/channels"class="nav-item ">📺 My Channels</a>
+        <a href="/library" class="nav-item ">🎵 Music Library</a>
+        <a href="/tasks"   class="nav-item ">📹 Video Tasks</a>
+        <a href="/stream"  class="nav-item ">🔴 Live Stream</a>
+        <a href="/settings"class="nav-item ">⚙️ Settings</a>
+
+        <div class="nav-divider"></div>
+
+        <!-- YouTube Block -->
+        <div class="yt-block ">
+            
+                <p style="font-size:0.75rem;opacity:0.7;margin-bottom:2px;">Connect YouTube to auto-upload.</p>
+                <a href="/login/youtube" class="btn-yt">▶ Connect YouTube</a>
+            
+        </div>
+
+        <div class="vps-status">
+            <div class="vps-dot">
+                <span style="color:#00ff88;font-size:0.7rem;">●</span>
+                <span style="font-size:0.82rem;">VPS Running Stable</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        
+<div class="page-header">
+    <div>
+        <h1>System Pulse</h1>
+        <p>Managing 3 automated channels across Europe Node.</p>
+    </div>
+    <button class="btn-ghost" onclick="refreshStatus()">↻ Refresh</button>
+</div>
+
+<!-- Stats -->
+<div class="grid-3">
+    <div class="stat-card">
+        <h3>Total Mastered Videos</h3>
+        <div class="val" id="stat-videos">128</div>
+    </div>
+    <div class="stat-card">
+        <h3>API Credits Remaining</h3>
+        <div class="val" id="stat-credits">$14.50</div>
+    </div>
+    <div class="stat-card">
+        <h3>Active Streams</h3>
+        <div class="val" id="stat-streams">0</div>
+    </div>
+</div>
+
+<!-- Forge Box -->
+<div class="gen-box">
+    <h2>🎬 AI Video Forge</h2>
+    <p style="opacity:0.55;font-size:0.88rem;margin-top:4px;">Generate a high-fidelity music video and push to your channels.</p>
+
+    <div class="style-pills">
+        <div class="style-pill active" onclick="selectStyle(this,'Cinematic')">Cinematic</div>
+        <div class="style-pill" onclick="selectStyle(this,'Anime')">Anime</div>
+        <div class="style-pill" onclick="selectStyle(this,'Cyberpunk')">Cyberpunk</div>
+        <div class="style-pill" onclick="selectStyle(this,'Realistic')">Realistic</div>
+        <div class="style-pill" onclick="selectStyle(this,'Digital Art')">Digital Art</div>
+    </div>
+
+    <div class="input-row">
+        <input class="form-input" type="text" id="genre" placeholder="Describe the vibe (e.g., Cyberpunk Lofi, Epic Cinematic)">
+        <button class="btn-primary" onclick="forgeVideo()" id="forge-btn">⚡ Forge Video</button>
+    </div>
+
+    <div class="options-row">
+        <label class="toggle-label">
+            <input type="checkbox" id="toggle-lyrics" checked> Lyrics Sync
+        </label>
+        <label class="toggle-label">
+            <input type="checkbox" id="toggle-upload" disabled> Auto Upload
+        </label>
+        
+        <span style="font-size:0.75rem;opacity:0.38;">(Connect YouTube to enable)</span>
+        
+    </div>
+</div>
+
+<!-- Task Queue -->
+<h3>⚙️ Active Production Queue</h3>
+<div id="task-feed" style="margin-bottom:36px;">
+    
+    <p style="opacity:0.38;font-size:0.85rem;">No active tasks. Start forging your first video! ⚡</p>
+    
+</div>
+
+<!-- Channels -->
+<h3>📺 Connected Channels</h3>
+<div class="grid-auto">
+    
+    <div class="glass-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+            <div>
+                <h2 style="font-size:1.05rem;">Lofi Chill Radio</h2>
+                <p style="opacity:0.5;font-size:0.82rem;margin-top:4px;">1,240 Subscribers</p>
+            </div>
+            <span class="badge badge-streaming">Streaming</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-ghost" style="flex:1;">Analytics</button>
+            <button class="btn-ghost" style="flex:1;">Settings</button>
+        </div>
+    </div>
+    
+    <div class="glass-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+            <div>
+                <h2 style="font-size:1.05rem;">Deep House Beats</h2>
+                <p style="opacity:0.5;font-size:0.82rem;margin-top:4px;">850 Subscribers</p>
+            </div>
+            <span class="badge badge-offline">Offline</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-ghost" style="flex:1;">Analytics</button>
+            <button class="btn-ghost" style="flex:1;">Settings</button>
+        </div>
+    </div>
+    
+    <div class="glass-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+            <div>
+                <h2 style="font-size:1.05rem;">Meditation AI</h2>
+                <p style="opacity:0.5;font-size:0.82rem;margin-top:4px;">420 Subscribers</p>
+            </div>
+            <span class="badge badge-processing">Processing</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-ghost" style="flex:1;">Analytics</button>
+            <button class="btn-ghost" style="flex:1;">Settings</button>
+        </div>
+    </div>
+    
+</div>
+
+    </main>
+
+    
+<script>
+    let currentStyle = 'Cinematic';
+
+    function selectStyle(el, style) {
+        document.querySelectorAll('.style-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        currentStyle = style;
+    }
+
+    function forgeVideo() {
+        const genre = document.getElementById('genre').value.trim();
+        if (!genre) return alert('Please describe the vibe first!');
+        const btn = document.getElementById('forge-btn');
+        btn.textContent = '⏳ Starting...'; btn.disabled = true;
+        fetch('/api/generate', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                genre: genre, style: currentStyle,
+                lyrics: document.getElementById('toggle-lyrics').checked,
+                auto_upload: document.getElementById('toggle-upload').checked
+            })
+        }).then(r=>r.json()).then(d=>{
+            btn.textContent = '⚡ Forge Video'; btn.disabled = false;
+            if (d.status === 'success') { document.getElementById('genre').value = ''; refreshStatus(); }
+        }).catch(()=>{ btn.textContent = '⚡ Forge Video'; btn.disabled = false; });
+    }
+
+    function refreshStatus() {
+        fetch('/api/status').then(r=>r.json()).then(d=>{
+            if (d.stats) {
+                document.getElementById('stat-videos').textContent = d.stats.total_videos;
+                document.getElementById('stat-credits').textContent = d.stats.credits_used;
+                document.getElementById('stat-streams').textContent = d.stats.active_streams;
+            }
+            if (d.tasks && d.tasks.length > 0) {
+                document.getElementById('task-feed').innerHTML = d.tasks.slice().reverse().map(t => {
+                    const cls = t.status.includes('Success')||t.status.includes('Uploaded') ? '#00ff88'
+                        : t.status.includes('Error')||t.status.includes('Failed') ? '#ff4444' : '#ffaa00';
+                    const yt = t.yt_url ? `<a href="${t.yt_url}" target="_blank" style="font-size:0.78rem;color:#00d4ff;margin-left:10px;">▶ YouTube</a>` : '';
+                    return `<div class="task-row"><div><strong>#${t.id} ${t.name}</strong>${yt}</div><span style="font-size:0.83rem;color:${cls};">${t.status}</span></div>`;
+                }).join('');
+            }
+        });
+    }
+
+    setInterval(refreshStatus, 5000);
+</script>
+
+</body>
+</html>

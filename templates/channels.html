@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}My Channels{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>📺 My Channels</h1>
+        <p>Manage your connected YouTube channels and automation settings.</p>
+    </div>
+</div>
+
+{% if not yt_connected %}
+<div style="background:rgba(112,0,255,0.06);border:1px solid rgba(112,0,255,0.2);border-radius:18px;padding:40px;text-align:center;margin-bottom:30px;">
+    <h2>Connect Your YouTube Account</h2>
+    <p style="opacity:0.5;margin:10px 0 20px;">Link your Google account to manage channels and auto-upload AI videos.</p>
+    <a href="/login/youtube" class="btn-primary">▶ Connect YouTube</a>
+</div>
+{% else %}
+{% if yt_channel %}
+<div class="glass-card" style="margin-bottom:24px;border-color:rgba(0,255,136,0.22);">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <h2>{{ yt_channel.name }}</h2>
+            <p style="opacity:0.5;margin-top:4px;">{{ yt_channel.subs }} subscribers · {{ yt_channel.videos }} videos</p>
+        </div>
+        <span style="color:#00ff88;font-weight:600;font-size:0.9rem;">● Connected</span>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<h3>Active Channels</h3>
+<div class="grid-auto">
+    {% for ch in channels %}
+    <div class="glass-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;">
+            <div>
+                <h2 style="font-size:1.05rem;">{{ ch.name }}</h2>
+                <p style="opacity:0.5;font-size:0.83rem;margin-top:4px;">{{ ch.subs }} Subscribers</p>
+            </div>
+            <span class="badge badge-{{ ch.status|lower }}">{{ ch.status }}</span>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-ghost" style="flex:1;">Analytics</button>
+            <button class="btn-ghost" style="flex:1;">Settings</button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

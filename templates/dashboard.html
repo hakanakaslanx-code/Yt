@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 style="margin: 0 0 10px 0; font-size: 2.2rem;">Hello, Creator!</h1>
+    <p style="opacity: 0.6; margin-bottom: 40px;">Here is what's happening in your AI music empire today.</p>
+
+    <!-- Stats Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px;">
+        <div class="glass-card">
+            <h3 style="margin: 0; opacity: 0.6; font-size: 0.9rem;">Total Channels</h3>
+            <p style="font-size: 1.8rem; font-weight: 600; margin: 10px 0;">{{ stats.total_channels }}</p>
+        </div>
+        <div class="glass-card">
+            <h3 style="margin: 0; opacity: 0.6; font-size: 0.9rem;">Active Forge</h3>
+            <p style="font-size: 1.8rem; font-weight: 600; margin: 10px 0; color: var(--accent-secondary);">{{ stats.active_forge }}</p>
+        </div>
+        <div class="glass-card">
+            <h3 style="margin: 0; opacity: 0.6; font-size: 0.9rem;">Gross Revenue</h3>
+            <p style="font-size: 1.8rem; font-weight: 600; margin: 10px 0; color: var(--accent-primary);">{{ stats.revenue }}</p>
+        </div>
+    </div>
+
+    <!-- Active Tasks Summary -->
+    <div class="glass-card">
+        <h3>Recent Activity</h3>
+        {% for task in tasks %}
+        <div style="border-bottom: 1px solid var(--glass-border); padding: 15px 0; display: flex; justify-content: space-between;">
+            <span>{{ task.name }}</span>
+            <span style="color: var(--accent-primary);">{{ task.status }}</span>
+        </div>
+        {% else %}
+        <p style="opacity: 0.5;">No production activity detected. Start a new Forge!</p>
+        {% endfor %}
+    </div>
+{% endblock %}

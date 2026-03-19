@@ -14,21 +14,35 @@ class ImageGenerator:
         if self.api_token:
             os.environ["REPLICATE_API_TOKEN"] = self.api_token
 
-    def generate_image(self, prompt, output_name="background.jpg"):
+    def generate_image(self, prompt, output_name="background.jpg", style="Cinematic"):
         """
         Flux Schnell modelini kullanarak görüntü üretir.
+        Gelen style text'ini prompt'a entegre eder.
         """
         if not self.api_token:
             print("Hata: REPLICATE_API_TOKEN bulunamadı.")
             return None
 
-        print(f"Görsel üretiliyor: {prompt}")
+        # Stil haritası
+        style_modifiers = {
+            "Cinematic": "cinematic lighting, highly detailed, 8k resolution, photorealistic, epic composition",
+            "Anime": "anime style, studio ghibli, makoto shinkai, vibrant colors, detailed anime art",
+            "Cyberpunk": "cyberpunk aesthetic, neon lights, dystopian futuristic city, dark synthwave vibe",
+            "Realistic": "ultra realistic, raw photo, DSLR 85mm, natural lighting, highly detailed",
+            "Digital Art": "trending on artstation, masterpiece, intricate details, fantasy digital painting"
+        }
+
+        # Stile göre promptu zenginleştir
+        modifier = style_modifiers.get(style, style_modifiers["Cinematic"])
+        final_prompt = f"{prompt}, {modifier}"
+
+        print(f"Görsel üretiliyor: {final_prompt}")
         try:
             # Flux Schnell Modeli
             output = replicate.run(
                 "black-forest-labs/flux-schnell",
                 input={
-                    "prompt": prompt,
+                    "prompt": final_prompt,
                     "aspect_ratio": "16:9",
                     "output_format": "jpg",
                     "output_quality": 90

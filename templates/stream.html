@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Live Stream{% endblock %}
+
+{% block head %}
+<style>
+    .stream-box { background: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 35px; }
+    .live-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,0,0,0.12); border: 1px solid rgba(255,0,0,0.3); color: #ff4444; padding: 7px 16px; border-radius: 20px; font-weight: 700; font-size: 0.88rem; }
+    .live-dot { width: 8px; height: 8px; background: #ff0000; border-radius: 50%; animation: pulse 1s infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>🔴 Live Stream Control</h1>
+        <p>24/7 YouTube Live — loop any AI-generated video via FFmpeg RTMP.</p>
+    </div>
+    <div id="live-indicator">
+        {% if stream_status.active %}
+        <div class="live-pill"><div class="live-dot"></div> LIVE NOW</div>
+        {% else %}
+        <span style="opacity:0.4;font-size:0.9rem;">⬛ OFFLINE</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if not ffmpeg_ok %}
+<div class="msg-warn">⚠️ <strong>FFmpeg not detected.</strong> Run on VPS: <code>apt-get install ffmpeg -y</code></div>
+{% endif %}
+
+<div class="stream-box">
+    <h2 style="margin-bottom:22px;">Stream Settings</h2>
+
+    <label class="form-label">YouTube Stream Key</label>
+    <input class="form-input" type="password" id="stream-key" placeholder="xxxx-xxxx-xxxx-xxxx-xxxx">
+    <p style="font-size:0.75rem;opacity:0.4;margin-top:5px;">YouTube Studio → Go Live → Stream key</p>
+
+    <label class="form-label" style="margin-top:20px;">Select Video to Loop</label>
+    <select class="form-input" id="stream-video" style="cursor:pointer;">
+        <option value="">-- Select a generated video --</option>
+        {% for v in videos %}
+        <option value="{{ v }}" {% if prefill == v %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+    </select>
+
+    <div style="display:flex;gap:15px;margin-top:28px;">
+        <button class="btn-primary" onclick="startStream()">🔴 Start 24/7 Stream</button>
+        <button class="btn-ghost" onclick="stopStream()">⬛ Stop Stream</button>
+    </div>
+
+    {% if stream_status.active %}
+    <div style="margin-top:24px;padding:16px;background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.15);border-radius:12px;font-size:0.88rem;line-height:1.8;">
+        <strong>🔴 Currently Broadcasting</strong><br>
+        🎬 Video: <span style="color:#00d4ff;">{{ stream_status.video }}</span><br>
+        ⏰ Started: {{ stream_status.started }}<br>
+        🔑 Key: {{ stream_status.key }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function startStream() {
+        const key = document.getElementById('stream-key').value.trim();
+        const video = document.getElementById('stream-video').value;
+        if (!key) return alert('Stream key required!');
+        if (!video) return alert('Select a video to stream!');
+        fetch('/api/stream/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({stream_key: key, video: video})
+        }).then(r => r.json()).then(d => { alert(d.message || d.error); location.reload(); });
+    }
+
+    function stopStream() {
+        fetch('/api/stream/stop', {method: 'POST'})
+        .then(r => r.json()).then(d => { alert(d.message); location.reload(); });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Master Auto V12{% endblock %} — Allone AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #08090d;
+            --sidebar-bg: rgba(15, 16, 22, 0.9);
+            --accent: #7000ff;
+            --accent2: #00d4ff;
+            --accent-yt: #ff0000;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #e0e0e0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── SIDEBAR ───────────────────────────── */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            transition: 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(112, 0, 255, 0.1);
+            color: #fff;
+            border-left-color: var(--accent);
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 12px 0;
+        }
+
+        /* YouTube Connect */
+        .yt-block {
+            margin-top: 10px;
+            padding: 14px;
+            background: rgba(255, 0, 0, 0.05);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .yt-block.connected {
+            background: rgba(0, 255, 136, 0.05);
+            border-color: rgba(0, 255, 136, 0.2);
+        }
+
+        .btn-yt {
+            display: block;
+            background: var(--accent-yt);
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.82rem;
+            margin-top: 8px;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-yt:hover { opacity: 0.85; }
+
+        .vps-status {
+            margin-top: auto;
+            padding-top: 15px;
+        }
+
+        .vps-dot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.82rem;
+        }
+
+        /* ── MAIN CONTENT ──────────────────────── */
+        .main {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: radial-gradient(circle at 80% 10%, rgba(112,0,255,0.05), transparent 60%);
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 36px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            opacity: 0.5;
+            margin-top: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* ── CARDS ─────────────────────────────── */
+        .glass-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 25px;
+            transition: 0.2s;
+        }
+
+        .glass-card:hover { border-color: rgba(112,0,255,0.3); }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-bottom: 36px; }
+        .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; }
+
+        /* Stat card */
+        .stat-card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 4px; height: 100%;
+            background: var(--accent);
+            opacity: 0.5;
+        }
+
+        .stat-card h3 { font-size: 0.82rem; opacity: 0.55; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card .val { font-size: 2.2rem; font-weight: 700; margin-top: 8px; color: #fff; }
+
+        /* Badges */
+        .badge { font-size: 0.72rem; padding: 4px 11px; border-radius: 20px; font-weight: 700; text-transform: uppercase; }
+        .badge-streaming { background: rgba(0,255,136,0.12); color: #00ff88; }
+        .badge-processing { background: rgba(255,204,0,0.12); color: #ffcc00; animation: pulse 2s infinite; }
+        .badge-offline { background: rgba(255,62,62,0.12); color: #ff3e3e; }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 12px 26px;
+            border-radius: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            box-shadow: 0 0 18px rgba(112,0,255,0.35);
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover { transform: scale(1.04); box-shadow: 0 0 28px rgba(112,0,255,0.55); }
+
+        .btn-ghost {
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+
+        /* Forms */
+        .form-label { display: block; font-size: 0.82rem; opacity: 0.65; margin: 16px 0 6px; }
+
+        .form-input {
+            width: 100%;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .form-input:focus { border-color: var(--accent); }
+
+        /* Flash messages */
+        .msg-success { background: rgba(0,255,136,0.08); color: #00ff88; border: 1px solid rgba(0,255,136,0.2); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.88rem; }
+        .msg-error { background: rgba(255,62,62,0.08); color: #ff4444; border: 1px solid rgba(255,62,62,0.2); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.88rem; }
+        .msg-warn { background: rgba(255,160,0,0.08); color: #ffaa00; border: 1px solid rgba(255,160,0,0.22); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.88rem; }
+
+        section-title { display: block; font-size: 1rem; font-weight: 600; opacity: 0.9; margin-bottom: 18px; }
+        h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+        h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; opacity: 0.9; }
+
+        .empty-state { text-align: center; padding: 70px 20px; opacity: 0.4; }
+        .empty-state h3 { font-size: 1.2rem; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation: fadeUp 0.3s ease; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo"><span style="font-size:1.8rem">⚡</span> Allone AI</div>
+
+        <a href="/"        class="nav-item {% if active=='dashboard' %}active{% endif %}">🏠 Dashboard</a>
+        <a href="/channels"class="nav-item {% if active=='channels'  %}active{% endif %}">📺 My Channels</a>
+        <a href="/library" class="nav-item {% if active=='library'   %}active{% endif %}">🎵 Music Library</a>
+        <a href="/tasks"   class="nav-item {% if active=='tasks'     %}active{% endif %}">📹 Video Tasks</a>
+        <a href="/stream"  class="nav-item {% if active=='stream'    %}active{% endif %}">🔴 Live Stream</a>
+        <a href="/settings"class="nav-item {% if active=='settings'  %}active{% endif %}">⚙️ Settings</a>
+
+        <div class="nav-divider"></div>
+
+        <!-- YouTube Block -->
+        <div class="yt-block {% if yt_connected %}connected{% endif %}">
+            {% if yt_connected %}
+                <p style="font-size:0.75rem;color:#00ff88;margin-bottom:4px;">✅ YouTube Connected</p>
+                {% if yt_channel %}
+                <p style="font-size:0.82rem;font-weight:600;">{{ yt_channel.name }}</p>
+                <p style="font-size:0.75rem;opacity:0.5;">{{ yt_channel.subs }} subs</p>
+                {% endif %}
+                <a href="/logout/youtube" class="btn-yt" style="background:rgba(255,255,255,0.08);">🔌 Disconnect</a>
+            {% else %}
+                <p style="font-size:0.75rem;opacity:0.7;margin-bottom:2px;">Connect YouTube to auto-upload.</p>
+                <a href="/login/youtube" class="btn-yt">▶ Connect YouTube</a>
+            {% endif %}
+        </div>
+
+        <div class="vps-status">
+            <div class="vps-dot">
+                <span style="color:#00ff88;font-size:0.7rem;">●</span>
+                <span style="font-size:0.82rem;">VPS Running Stable</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
