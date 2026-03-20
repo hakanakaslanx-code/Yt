@@ -21,18 +21,21 @@ class MusicGenerator:
         """
         Suno API üzerinden müzik üretimini başlatır.
         """
-        url = f"{BASE_URL}/generate"
+        url = f"{BASE_URL}/suno/generate"
         payload = {
             "prompt": prompt,
             "model": model,
-            "instrumental": instrumental
+            "instrumental": instrumental,
+            "customMode": False
         }
-        
+
         response = requests.post(url, json=payload, headers=self.headers)
         if response.status_code == 200:
             data = response.json()
-            print(f"Müzik üretimi başlatıldı. Task ID: {data.get('taskId')}")
-            return data.get('taskId')
+            # API yanıtı { "code": 200, "data": { "taskId": "..." } } şeklinde olabilir
+            task_id = (data.get('data') or {}).get('taskId') or data.get('taskId')
+            print(f"Müzik üretimi başlatıldı. Task ID: {task_id}")
+            return task_id
         else:
             print(f"Hata: {response.status_code} - {response.text}")
             return None
@@ -57,33 +60,46 @@ class MusicGenerator:
         while retries < max_retries:
             retries += 1
             try:
-                status_data = self.check_status(task_id)
+                raw = self.check_status(task_id)
             except Exception as e:
                 print(f"Status check error: {e}")
                 time.sleep(10)
                 continue
 
-            if not status_data:
+            if not raw:
                 print("Status data boş, tekrar deneniyor...")
                 time.sleep(10)
                 continue
-                
+
+            # API yanıtı düz veya { "data": {...} } şeklinde olabilir
+            status_data = raw.get("data", raw)
             status = status_data.get("status")
-            if status == "SUCCESS":
-                audio_url = status_data.get("audioUrl")
+
+            # Numerik (2=success, 1=failed) veya string ("SUCCESS"/"FAILED") kontrol
+            is_success = status == 2 or str(status).upper() in ("SUCCESS", "COMPLETE", "COMPLETED")
+            is_failed  = status == 1 or str(status).upper() in ("FAILED", "ERROR")
+
+            if is_success:
+                # Şarkı listesinden ilk audioUrl'yi al
+                songs = status_data.get("songs") or status_data.get("data") or []
+                audio_url = None
+                if isinstance(songs, list) and songs:
+                    audio_url = songs[0].get("audioUrl") or songs[0].get("audio_url")
+                # Düz anahtardan da dene
+                audio_url = audio_url or status_data.get("audioUrl") or status_data.get("audio_url")
                 if audio_url:
                     print(f"Müzik hazır! İndiriliyor: {audio_url}")
                     self.download_file(audio_url, output_name)
                 else:
                     print("HATA: audioUrl bulunamadı!")
                 return
-            elif status == "FAILED":
+            elif is_failed:
                 print("Müzik üretimi başarısız oldu.")
                 return
-            
+
             print(f"  Durum: {status} ({retries}/{max_retries})")
             time.sleep(10)
-        
+
         print("HATA: Zaman aşımı - müzik üretimi tamamlanamadı.")
 
     def download_file(self, url, filename):
