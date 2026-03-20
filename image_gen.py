@@ -49,10 +49,15 @@ class ImageGenerator:
                 }
             )
             
-            # Replicate liste olarak döner
-            image_url = output[0] if isinstance(output, list) else output
+            # Replicate eski sürümlerde liste, yeni sürümlerde FileOutput döner
+            if isinstance(output, list):
+                raw = output[0]
+            else:
+                raw = output
+            # FileOutput nesnesi URL'ye dönüştürülür
+            image_url = str(raw) if not isinstance(raw, str) else raw
             print(f"Görsel hazır: {image_url}")
-            
+
             # İndir ve kaydet
             self.download_file(image_url, output_name)
             return output_name

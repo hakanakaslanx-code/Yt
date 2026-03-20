@@ -35,8 +35,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET', os.urandom(24))
 
 # ── Data ──────────────────────────────────────────────
-ENV_FILE = '/root/Yt/.env'
-VIDEOS_DIR = '/root/Yt/outputs'
+_base_dir = os.environ.get('APP_BASE_DIR', os.path.dirname(os.path.abspath(__file__)))
+ENV_FILE = os.environ.get('ENV_FILE', os.path.join(_base_dir, '.env'))
+VIDEOS_DIR = os.environ.get('VIDEOS_DIR', os.path.join(_base_dir, 'outputs'))
 os.makedirs(VIDEOS_DIR, exist_ok=True)
 
 stats = {"total_videos": 128, "credits_used": "$14.50", "active_streams": 0}
@@ -266,8 +267,9 @@ def api_stream_status():
 # ── YouTube Auth ──────────────────────────────────────
 @app.route('/login/youtube')
 def login_youtube():
-    if not os.path.exists('/root/Yt/client_secrets.json'):
-        return jsonify({"error": "client_secrets.json not found. Upload to VPS first."}), 400
+    secrets_file = os.environ.get('CLIENT_SECRETS_FILE', os.path.join(_base_dir, 'client_secrets.json'))
+    if not os.path.exists(secrets_file):
+        return jsonify({"error": "client_secrets.json not found. Upload to server first."}), 400
     try:
         auth_url, state, _ = get_auth_url()
         session['yt_state'] = state
@@ -290,8 +292,9 @@ def callback_youtube():
 @app.route('/logout/youtube')
 def logout_youtube():
     try:
-        if os.path.exists('/root/Yt/token.pickle'):
-            os.remove('/root/Yt/token.pickle')
+        token_file = os.environ.get('TOKEN_FILE', os.path.join(_base_dir, 'token.pickle'))
+        if os.path.exists(token_file):
+            os.remove(token_file)
     except Exception:
         pass
     return redirect('/')

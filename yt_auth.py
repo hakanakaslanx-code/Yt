@@ -9,9 +9,10 @@ from googleapiclient.discovery import build
 SCOPES = ['https://www.googleapis.com/auth/youtube.upload',
           'https://www.googleapis.com/auth/youtube.readonly']
 
-CLIENT_SECRETS_FILE = '/root/Yt/client_secrets.json'
-TOKEN_FILE = '/root/Yt/token.pickle'
-REDIRECT_URI = 'http://srv1507025.hstgr.cloud/callback/youtube'
+_base_dir = os.environ.get('APP_BASE_DIR', os.path.dirname(os.path.abspath(__file__)))
+CLIENT_SECRETS_FILE = os.environ.get('CLIENT_SECRETS_FILE', os.path.join(_base_dir, 'client_secrets.json'))
+TOKEN_FILE = os.environ.get('TOKEN_FILE', os.path.join(_base_dir, 'token.pickle'))
+REDIRECT_URI = os.environ.get('REDIRECT_URI', 'http://localhost:5000/callback/youtube')
 
 def get_auth_url():
     """OAuth2 login URL'si oluşturur."""
