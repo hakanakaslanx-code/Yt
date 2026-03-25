@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}VPS Monitor{% endblock %}
+
+{% block head %}
+<style>
+    .monitor-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-bottom: 30px;
+    }
+
+    .monitor-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 30px;
+    }
+
+    .stat-block {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-block.ok    { border-left: 3px solid #00ff88; }
+    .stat-block.warn  { border-left: 3px solid #ffaa00; }
+    .stat-block.error { border-left: 3px solid #ff4444; }
+
+    .stat-block h4 {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.5;
+        margin-bottom: 10px;
+    }
+
+    .stat-block .val {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .stat-block .sub {
+        font-size: 0.78rem;
+        opacity: 0.45;
+        margin-top: 4px;
+    }
+
+    .status-dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 7px;
+    }
+    .dot-green  { background: #00ff88; box-shadow: 0 0 8px #00ff88; animation: pulse 2s infinite; }
+    .dot-red    { background: #ff4444; }
+    .dot-yellow { background: #ffaa00; }
+
+    .log-box {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.78rem;
+        color: #aaffaa;
+        max-height: 320px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        line-height: 1.6;
+    }
+
+    .check-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.9rem;
+    }
+    .check-row:last-child { border-bottom: none; }
+
+    .badge-ok    { background: rgba(0,255,136,0.12); color: #00ff88; padding: 3px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .badge-fail  { background: rgba(255,68,68,0.12);  color: #ff4444; padding: 3px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    .badge-warn  { background: rgba(255,170,0,0.12);  color: #ffaa00; padding: 3px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>VPS Monitor</h1>
+        <p>Sistem durumu ve kaynak kullanımı — otomatik yenilenir.</p>
+    </div>
+    <button class="btn-ghost" onclick="refreshAll()">↻ Yenile</button>
+</div>
+
+<!-- Kaynak Kartları -->
+<div class="monitor-grid" id="resource-grid">
+    <div class="stat-block ok">
+        <h4>CPU Kullanımı</h4>
+        <div class="val" id="cpu-val">{{ vps.cpu }}%</div>
+        <div class="sub">Anlık işlemci yükü</div>
+    </div>
+    <div class="stat-block ok">
+        <h4>RAM Kullanımı</h4>
+        <div class="val" id="ram-val">{{ vps.ram }}</div>
+        <div class="sub">Bellek durumu</div>
+    </div>
+    <div class="stat-block ok">
+        <h4>Disk Kullanımı</h4>
+        <div class="val" id="disk-val">{{ vps.disk }}</div>
+        <div class="sub">Depolama alanı</div>
+    </div>
+    <div class="stat-block ok">
+        <h4>Uptime</h4>
+        <div class="val" style="font-size:1.1rem;" id="uptime-val">{{ vps.uptime }}</div>
+        <div class="sub">Kesintisiz çalışma süresi</div>
+    </div>
+    <div class="stat-block ok">
+        <h4>Üretilen Videolar</h4>
+        <div class="val" id="vid-count">{{ vps.output_videos }}</div>
+        <div class="sub">{{ vps.output_size }} toplam boyut</div>
+    </div>
+    <div class="stat-block {% if vps.yt_connected %}ok{% else %}warn{% endif %}">
+        <h4>YouTube Kanalı</h4>
+        <div class="val" style="font-size:1rem;">
+            {% if yt_channel %}{{ yt_channel.name }}{% else %}Bağlı Değil{% endif %}
+        </div>
+        <div class="sub">{% if yt_channel %}{{ yt_channel.subs }} abone · {{ yt_channel.videos }} video{% else %}—{% endif %}</div>
+    </div>
+</div>
+
+<!-- YouTube API Quota -->
+<div class="glass-card" style="margin-bottom:24px;" id="quota-card">
+    <h3>YouTube API Quota <span style="font-size:0.75rem;opacity:0.5;font-weight:400;">(günlük 10,000 birim)</span></h3>
+    <div style="display:flex;align-items:center;gap:16px;margin-top:12px;">
+        <div style="flex:1;">
+            <div style="background:rgba(255,255,255,0.07);border-radius:8px;height:10px;overflow:hidden;">
+                <div id="quota-bar" style="height:100%;background:var(--accent);border-radius:8px;transition:width 0.5s;width:0%;"></div>
+            </div>
+        </div>
+        <div style="white-space:nowrap;font-size:0.9rem;" id="quota-label">Yükleniyor...</div>
+    </div>
+    <div style="margin-top:8px;font-size:0.78rem;opacity:0.5;" id="quota-sub">Her video yüklemesi ~1,600 birim · thumbnail 50 birim</div>
+    <div id="quota-warn" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.3);border-radius:8px;font-size:0.82rem;color:#ffaa00;">
+        ⚠️ Günlük kota %80'in üzerinde! Yükleme yapılamayabilir.
+    </div>
+</div>
+
+<!-- Servis Kontrolleri -->
+<div class="monitor-grid-2">
+    <div class="glass-card">
+        <h3>Servis Durumu</h3>
+        <div class="check-row">
+            <span><span class="status-dot {% if vps.app_running %}dot-green{% else %}dot-red{% endif %}"></span>Flask App</span>
+            <span class="{% if vps.app_running %}badge-ok{% else %}badge-fail{% endif %}">
+                {% if vps.app_running %}Çalışıyor{% else %}DURDU{% endif %}
+            </span>
+        </div>
+        <div class="check-row">
+            <span><span class="status-dot {% if vps.nginx == 'active' %}dot-green{% else %}dot-red{% endif %}"></span>Nginx Proxy</span>
+            <span class="{% if vps.nginx == 'active' %}badge-ok{% else %}badge-fail{% endif %}">
+                {{ vps.nginx }}
+            </span>
+        </div>
+        <div class="check-row">
+            <span><span class="status-dot {% if vps.modules_ok %}dot-green{% else %}dot-red{% endif %}"></span>Python Modülleri</span>
+            <span class="{% if vps.modules_ok %}badge-ok{% else %}badge-fail{% endif %}">
+                {% if vps.modules_ok %}Tümü Yüklü{% else %}HATA{% endif %}
+            </span>
+        </div>
+        <div class="check-row">
+            <span><span class="status-dot {% if vps.yt_connected %}dot-green{% else %}dot-yellow{% endif %}"></span>YouTube Bağlantısı</span>
+            <span class="{% if vps.yt_connected %}badge-ok{% else %}badge-warn{% endif %}">
+                {% if vps.yt_connected %}Bağlı{% else %}Bağlı Değil{% endif %}
+            </span>
+        </div>
+        <div class="check-row">
+            <span><span class="status-dot {% if vps.kie_set %}dot-green{% else %}dot-yellow{% endif %}"></span>KIE API Key</span>
+            <span class="{% if vps.kie_set %}badge-ok{% else %}badge-warn{% endif %}">
+                {% if vps.kie_set %}Ayarlı{% else %}Eksik{% endif %}
+            </span>
+        </div>
+        <div class="check-row">
+            <span><span class="status-dot {% if vps.replicate_set %}dot-green{% else %}dot-yellow{% endif %}"></span>Replicate API Key</span>
+            <span class="{% if vps.replicate_set %}badge-ok{% else %}badge-warn{% endif %}">
+                {% if vps.replicate_set %}Ayarlı{% else %}Eksik{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <h3>Hızlı Aksiyonlar</h3>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+            <button class="btn-ghost" style="text-align:left;" onclick="refreshAll()">↻ Durumu Yenile</button>
+            <a href="/settings" class="btn-ghost" style="text-align:left;text-decoration:none;display:block;padding:10px 20px;">⚙️ API Key Ayarla</a>
+            {% if not vps.yt_connected %}
+            <a href="/login/youtube" class="btn-ghost" style="text-align:left;text-decoration:none;display:block;padding:10px 20px;">▶ YouTube Bağla</a>
+            {% endif %}
+            <a href="/stream" class="btn-ghost" style="text-align:left;text-decoration:none;display:block;padding:10px 20px;">🔴 Live Stream</a>
+            <a href="/tasks" class="btn-ghost" style="text-align:left;text-decoration:none;display:block;padding:10px 20px;">📹 Video Görevleri</a>
+            <button class="btn-ghost" style="text-align:left;color:#ffaa00;border-color:rgba(255,170,0,0.3);"
+                    onclick="cleanupFiles()">🗑️ Eski Dosyaları Temizle (7+ gün)</button>
+        </div>
+        <div id="cleanup-result" style="margin-top:10px;font-size:0.82rem;display:none;"></div>
+    </div>
+</div>
+
+<!-- Canlı Log -->
+<h3>Canlı Uygulama Logu</h3>
+<div class="log-box" id="log-box">{{ vps.logs }}</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function refreshAll() {
+        fetch('/api/monitor')
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('cpu-val').textContent   = d.cpu + '%';
+                document.getElementById('ram-val').textContent   = d.ram;
+                document.getElementById('disk-val').textContent  = d.disk;
+                document.getElementById('uptime-val').textContent = d.uptime;
+                document.getElementById('vid-count').textContent = d.output_videos;
+
+                // Log güncelle
+                const logBox = document.getElementById('log-box');
+                logBox.textContent = d.logs;
+                logBox.scrollTop = logBox.scrollHeight;
+            });
+        refreshQuota();
+    }
+
+    function refreshQuota() {
+        fetch('/api/quota')
+            .then(r => r.json())
+            .then(q => {
+                const pct   = q.limit > 0 ? Math.round(q.used / q.limit * 100) : 0;
+                const remaining = Math.floor((q.limit - q.used) / 1600);
+                document.getElementById('quota-bar').style.width   = pct + '%';
+                document.getElementById('quota-bar').style.background =
+                    pct >= 80 ? '#ff4444' : pct >= 60 ? '#ffaa00' : 'var(--accent)';
+                document.getElementById('quota-label').textContent =
+                    `${q.used.toLocaleString()} / ${q.limit.toLocaleString()} birim (${pct}%)`;
+                document.getElementById('quota-sub').textContent =
+                    `~${remaining} video yüklemesi kaldı bugün · ${q.date}`;
+                document.getElementById('quota-warn').style.display = pct >= 80 ? 'block' : 'none';
+            }).catch(() => {});
+    }
+    refreshQuota();
+
+    function cleanupFiles() {
+        if (!confirm('7 günden eski MP4/MP3/JPG dosyaları silinsin mi?')) return;
+        fetch('/api/cleanup', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({keep_days: 7})
+        }).then(r => r.json()).then(d => {
+            const el = document.getElementById('cleanup-result');
+            el.style.display = 'block';
+            if (d.deleted === 0) {
+                el.style.color = '#00ff88';
+                el.textContent = 'Temizlenecek eski dosya yok.';
+            } else {
+                el.style.color = '#ffaa00';
+                el.textContent = `${d.deleted} dosya silindi. Disk alanı boşaltıldı.`;
+            }
+            refreshAll();
+        });
+    }
+
+    // Her 10 saniyede otomatik yenile
+    setInterval(refreshAll, 10000);
+
+    // Log kutusunu en alta kaydır
+    const lb = document.getElementById('log-box');
+    lb.scrollTop = lb.scrollHeight;
+</script>
+{% endblock %}

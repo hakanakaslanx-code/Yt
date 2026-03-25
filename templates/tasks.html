@@ -1,34 +1,127 @@
 {% extends "base.html" %}
 {% block title %}Video Tasks{% endblock %}
 
+{% block head %}
+<style>
+    .task-card {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px 22px;
+        margin-bottom: 10px;
+        transition: 0.2s;
+    }
+    .task-card:hover { border-color: rgba(112,0,255,0.3); }
+
+    .task-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .task-thumb {
+        width: 140px;
+        min-width: 140px;
+        height: 79px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+        border: 1px solid var(--border);
+    }
+    .task-thumb:hover { border-color: var(--accent2); transform: scale(1.03); }
+
+    .task-info { flex: 1; min-width: 180px; }
+    .task-info strong { font-size: 0.98rem; }
+    .task-info .task-status { font-size: 0.83rem; margin-top: 4px; display: block; }
+
+    .task-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+
+    .btn-dl   { background: var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:9px; font-family:inherit; font-size:0.82rem; font-weight:600; cursor:pointer; text-decoration:none; transition:0.2s; }
+    .btn-dl:hover { opacity:0.85; }
+    .btn-stream { background:rgba(255,62,62,0.1); color:#ff6060; border:1px solid rgba(255,62,62,0.3); padding:8px 14px; border-radius:9px; font-family:inherit; font-size:0.82rem; cursor:pointer; text-decoration:none; transition:0.2s; }
+    .btn-stream:hover { background:rgba(255,62,62,0.2); }
+    .btn-upload { background:rgba(255,0,0,0.1); color:#ff4040; border:1px solid rgba(255,0,0,0.3); padding:8px 14px; border-radius:9px; font-family:inherit; font-size:0.82rem; cursor:pointer; transition:0.2s; }
+    .btn-upload:hover { background:rgba(255,0,0,0.2); }
+    .btn-retry { background:rgba(255,170,0,0.1); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); padding:8px 14px; border-radius:9px; font-family:inherit; font-size:0.82rem; cursor:pointer; transition:0.2s; }
+    .btn-retry:hover { background:rgba(255,170,0,0.2); }
+
+    .inline-player {
+        display: none;
+        width: 100%;
+        max-width: 540px;
+        border-radius: 10px;
+        margin-top: 12px;
+        background: #000;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1>📹 Video Tasks</h1>
-        <p>All generated videos. Download, send to Live Stream, or upload to YouTube.</p>
+        <p>All generated videos. Preview, download, stream, or upload to YouTube.</p>
     </div>
 </div>
 
 {% if tasks %}
-<div style="display:flex;flex-direction:column;gap:10px;">
-    {% for task in tasks %}
-    <div class="glass-card" style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;">
-        <div>
-            <strong>#{{ task.id }} — {{ task.name }}</strong><br>
-            <span style="font-size:0.83rem;{% if 'Success' in task.status or 'Uploaded' in task.status %}color:#00ff88{% elif 'Error' in task.status or 'Failed' in task.status %}color:#ff4444{% else %}color:#ffaa00{% endif %};">
-                {{ task.status }}
-            </span>
-            {% if task.yt_url %}
-            &nbsp;·&nbsp;<a href="{{ task.yt_url }}" target="_blank" style="font-size:0.8rem;color:var(--accent2);">▶ YouTube</a>
-            {% endif %}
-        </div>
-        <div style="display:flex;gap:8px;">
+<div>
+    {% for task in tasks|reverse %}
+    <div class="task-card">
+        <div class="task-top">
+            <!-- Thumbnail preview -->
             {% if task.file %}
-            <a href="/download/{{ task.file }}" class="btn-primary" style="padding:8px 14px;font-size:0.82rem;">⬇ Download</a>
-            <a href="/stream?video={{ task.file }}" class="btn-ghost" style="padding:8px 14px;font-size:0.82rem;">🔴 Stream</a>
-            {% if not task.yt_url %}
-            <button class="btn-ghost" style="padding:8px 14px;font-size:0.82rem;background:rgba(255,0,0,0.12);border-color:rgba(255,0,0,0.3);color:#ff4444;" onclick="uploadTask({{ task.id }},'{{ task.file }}')">▲ Upload</button>
+            <img class="task-thumb"
+                 src="/outputs/image_{{ task.id }}.jpg"
+                 onerror="this.style.display='none'"
+                 onclick="togglePlayer({{ task.id }})"
+                 title="Click to preview video">
             {% endif %}
+
+            <div class="task-info">
+                <strong>#{{ task.id }} — {{ task.name }}</strong>
+                <!-- Kategori badge + düzenleme -->
+                <span id="cat-badge-{{ task.id }}"
+                      onclick="editCategory({{ task.id }}, this)"
+                      title="Stream kategorisi — tıkla değiştir"
+                      style="display:inline-block;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:1px 8px;font-size:.72rem;margin-left:6px;vertical-align:middle;cursor:pointer;">
+                    📁 {{ task.category or task.genre or 'Other' }}
+                </span>
+                <span class="task-status" style="
+                    {% if 'Uploaded' in task.status or 'Success' in task.status %}color:#00ff88
+                    {% elif 'Error' in task.status or 'Failed' in task.status %}color:#ff4444
+                    {% else %}color:#ffaa00{% endif %};">
+                    {{ task.status }}
+                </span>
+                {% if task.yt_url %}
+                <a href="{{ task.yt_url }}" target="_blank"
+                   style="font-size:0.78rem;color:var(--accent2);display:inline-block;margin-top:4px;">
+                    ▶ YouTube'da Aç
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Inline video player (hidden by default) -->
+        {% if task.file %}
+        <video id="player-{{ task.id }}" class="inline-player" controls preload="none">
+            <source src="/outputs/{{ task.file }}" type="video/mp4">
+        </video>
+        {% endif %}
+
+        <div class="task-actions">
+            {% if task.file %}
+            <a href="/download/{{ task.file }}" class="btn-dl">⬇ Download</a>
+            <a href="/stream?video={{ task.file }}" class="btn-stream">🔴 Stream</a>
+            {% if not task.yt_url %}
+            <button class="btn-upload" onclick="uploadTask({{ task.id }},'{{ task.file }}')">▲ Upload to YT</button>
+            {% endif %}
+            {% endif %}
+            {% if 'Error' in task.status or 'Failed' in task.status %}
+            <button class="btn-retry" onclick="retryTask({{ task.id }})">↻ Retry</button>
             {% endif %}
         </div>
     </div>
@@ -44,12 +137,53 @@
 
 {% block scripts %}
 <script>
+    function togglePlayer(id) {
+        const v = document.getElementById('player-' + id);
+        if (!v) return;
+        const show = v.style.display !== 'block';
+        v.style.display = show ? 'block' : 'none';
+        if (!show) v.pause();
+    }
+
     function uploadTask(id, file) {
-        if (!confirm('Upload to YouTube as Private?')) return;
         fetch('/api/upload', {
-            method:'POST', headers:{'Content-Type':'application/json'},
+            method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({task_id: id, file: file})
-        }).then(r=>r.json()).then(d=>{ alert(d.message||d.error); location.reload(); });
+        }).then(r => r.json()).then(d => {
+            alert(d.message || d.error);
+            location.reload();
+        });
+    }
+
+    function retryTask(id) {
+        if (!confirm('Retry this failed task?')) return;
+        fetch(`/api/retry/${id}`, {method: 'POST'})
+            .then(r => r.json())
+            .then(d => { alert(d.message || d.error); location.reload(); });
+    }
+
+    function editCategory(id, badgeEl) {
+        const current = badgeEl.textContent.replace('📁', '').trim();
+        const cats = ['Jazz','Lofi','80s','Cyberpunk','Ambient','Classical','Electronic',
+                      'Afro House','Deep House','Rock','Pop','R&B','Hip-Hop','Country',
+                      'Reggae','Meditation','Workout','Study','Sleep','Other'];
+        let sel = '<select onchange="saveCategory(' + id + ',this)" style="background:#1a1a2e;color:#fff;border:1px solid rgba(0,212,255,.4);border-radius:6px;padding:2px 6px;font-size:.72rem;">';
+        cats.forEach(c => { sel += `<option value="${c}" ${c===current?'selected':''}>${c}</option>`; });
+        sel += '</select>';
+        badgeEl.innerHTML = sel;
+        badgeEl.onclick = null;
+    }
+
+    function saveCategory(id, selectEl) {
+        const cat = selectEl.value;
+        fetch(`/api/tasks/${id}/category`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({category: cat})
+        }).then(r => r.json()).then(d => {
+            const badge = document.getElementById('cat-badge-' + id);
+            badge.innerHTML = '📁 ' + cat;
+            badge.onclick = function() { editCategory(id, badge); };
+        });
     }
 </script>
 {% endblock %}

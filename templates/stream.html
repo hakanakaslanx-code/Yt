@@ -3,79 +3,724 @@
 
 {% block head %}
 <style>
-    .stream-box { background: var(--glass); border: 1px solid var(--border); border-radius: 20px; padding: 35px; }
-    .live-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,0,0,0.12); border: 1px solid rgba(255,0,0,0.3); color: #ff4444; padding: 7px 16px; border-radius: 20px; font-weight: 700; font-size: 0.88rem; }
-    .live-dot { width: 8px; height: 8px; background: #ff0000; border-radius: 50%; animation: pulse 1s infinite; }
+    /* ── Live Banner ─────────────────────────────────────── */
+    .live-banner {
+        background: linear-gradient(135deg, rgba(255,0,0,0.08), rgba(80,0,0,0.12));
+        border: 1px solid rgba(255,50,50,0.2);
+        border-radius: 16px;
+        padding: 20px 28px;
+        margin-bottom: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+    .live-banner.offline {
+        background: rgba(255,255,255,0.03);
+        border-color: var(--border);
+    }
+    .live-badge {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: rgba(255,0,0,0.15); border: 1px solid rgba(255,50,50,0.4);
+        color: #ff4444; padding: 6px 14px; border-radius: 20px;
+        font-weight: 800; font-size: 0.82rem; letter-spacing: 1px;
+    }
+    .live-dot {
+        width: 8px; height: 8px; background: #ff3333;
+        border-radius: 50%; box-shadow: 0 0 8px #ff3333;
+        animation: livePulse 1s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+        0%,100% { transform: scale(1); opacity: 1; }
+        50%      { transform: scale(0.6); opacity: 0.5; }
+    }
+    .offline-badge {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+        color: var(--muted); padding: 6px 14px; border-radius: 20px;
+        font-weight: 700; font-size: 0.82rem;
+    }
+    .eq-bars { display: flex; align-items: flex-end; gap: 3px; height: 28px; }
+    .eq-bar {
+        width: 4px; background: linear-gradient(to top, #ff3333, #ff8888);
+        border-radius: 2px 2px 0 0;
+        animation: eqAnim var(--dur) ease-in-out infinite alternate;
+    }
+    @keyframes eqAnim { from { height: 4px; } to { height: var(--max); } }
+
+    /* ── Setup Box ───────────────────────────────────────── */
+    .setup-box {
+        background: var(--glass); border: 1px solid var(--border);
+        border-radius: 16px; padding: 22px 24px; margin-bottom: 16px;
+    }
+    .section-label {
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px;
+        color: var(--muted); font-weight: 600; margin-bottom: 10px;
+    }
+
+    /* ── Stream Stats ───────────────────────────────────── */
+    .stream-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
+    .stat-item { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 14px; }
+    .stat-item .s-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 4px; }
+    .stat-item .s-value { font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .stat-item .s-value.green  { color: #00e676; }
+    .stat-item .s-value.yellow { color: #ffcc00; }
+    .stat-item .s-value.red    { color: #ff5252; }
+
+    .stream-progress { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; margin: 14px 0; }
+    .stream-progress-fill { height: 100%; background: linear-gradient(90deg, #ff3333, #ff8888); border-radius: 2px; animation: progressFlow 2s ease-in-out infinite; width: 60%; }
+    @keyframes progressFlow { 0% { width:40%;opacity:.8; } 50% { width:80%;opacity:1; } 100% { width:40%;opacity:.8; } }
+
+    .health-dot { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; font-weight: 600; padding: 4px 11px; border-radius: 20px; }
+    .health-ok  { background: rgba(0,230,118,0.12); color: #00e676; border: 1px solid rgba(0,230,118,0.25); }
+    .health-err { background: rgba(255,50,50,0.12);  color: #ff5252; border: 1px solid rgba(255,50,50,0.25); }
+
+    /* ── Connect Box ─────────────────────────────────────── */
+    .connect-box {
+        background: linear-gradient(135deg, rgba(112,0,255,0.07), rgba(80,0,180,0.05));
+        border: 1px solid rgba(112,0,255,0.2);
+        border-radius: 14px; padding: 18px 20px; margin-bottom: 16px;
+    }
+    .connect-status {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 0.88rem; font-weight: 600; margin-bottom: 12px;
+    }
+    .connect-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .dot-ready { background: #00e676; box-shadow: 0 0 6px #00e676; }
+    .dot-idle  { background: rgba(255,255,255,0.3); }
+    .dot-spin  { background: var(--accent); animation: livePulse 0.8s ease-in-out infinite; }
+
+    .key-display {
+        background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+        border-radius: 10px; padding: 10px 14px;
+        font-family: monospace; font-size: 0.85rem; letter-spacing: 1.5px;
+        color: #00e676; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        margin-bottom: 10px;
+    }
+    .key-display span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Tags ───────────────────────────────────────────── */
+    .tag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 14px; }
+    .tag-card {
+        background: var(--glass); border: 2px solid var(--border);
+        border-radius: 14px; padding: 16px 12px; cursor: pointer;
+        transition: 0.18s; text-align: center; user-select: none;
+    }
+    .tag-card:hover  { border-color: rgba(124,58,255,0.5); transform: translateY(-2px); }
+    .tag-card.active { border-color: var(--accent); background: rgba(124,58,255,0.12); }
+    .tag-card .tag-emoji { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+    .tag-card .tag-name  { font-weight: 700; font-size: 0.88rem; }
+    .tag-card .tag-count { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+    .mode-tabs { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; width: fit-content; }
+    .mode-tab  { padding: 8px 20px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.15s; border: none; background: transparent; color: var(--muted); font-family: inherit; }
+    .mode-tab.active { background: var(--accent); color: #fff; }
+
+    .btn-stop {
+        background: rgba(255,50,50,0.15); color: #ff5252;
+        border: 1px solid rgba(255,50,50,0.3); padding: 8px 18px;
+        border-radius: 10px; cursor: pointer; font-family: inherit;
+        font-size: 0.85rem; font-weight: 600; transition: 0.18s;
+    }
+    .btn-stop:hover { background: rgba(255,50,50,0.25); }
+
+    /* Collapsible */
+    .collapsible-toggle { cursor: pointer; font-size: 0.78rem; color: var(--muted); user-select: none; display: inline-flex; align-items: center; gap: 5px; }
+    .collapsible-toggle:hover { color: var(--text); }
+    .collapsible-body { display: none; margin-top: 12px; }
+    .collapsible-body.open { display: block; }
+
+    /* Active stream mini cards */
+    .stream-mini-card {
+        background: rgba(255,0,0,0.07); border: 1px solid rgba(255,50,50,0.25);
+        border-radius: 12px; padding: 12px 16px; min-width: 220px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1>🔴 Live Stream Control</h1>
-        <p>24/7 YouTube Live — loop any AI-generated video via FFmpeg RTMP.</p>
-    </div>
-    <div id="live-indicator">
-        {% if stream_status.active %}
-        <div class="live-pill"><div class="live-dot"></div> LIVE NOW</div>
-        {% else %}
-        <span style="opacity:0.4;font-size:0.9rem;">⬛ OFFLINE</span>
-        {% endif %}
+        <h1>🔴 Live Stream</h1>
+        <p>YouTube API üzerinden otomatik bağlan, kategori seç, yayını başlat.</p>
     </div>
 </div>
 
 {% if not ffmpeg_ok %}
-<div class="msg-warn">⚠️ <strong>FFmpeg not detected.</strong> Run on VPS: <code>apt-get install ffmpeg -y</code></div>
+<div class="msg-warn">⚠️ FFmpeg bulunamadı. VPS'de: <code>apt install ffmpeg -y</code></div>
 {% endif %}
 
-<div class="stream-box">
-    <h2 style="margin-bottom:22px;">Stream Settings</h2>
+<!-- ── Kanal Seçici ────────────────────────────────────── -->
+{% if channels and channels|length > 1 %}
+<div class="setup-box" style="padding:14px 18px;margin-bottom:14px;">
+    <p class="section-label" style="margin-bottom:8px;">📺 Kanal Seç</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="ch-selector">
+        {% for ch in channels %}
+        {% set is_def = ch.get('is_default', loop.first) %}
+        <button onclick="selectChannel('{{ ch.slug }}','{{ ch.name }}',this)"
+                class="vstyle-btn {% if is_def %}active{% endif %}"
+                style="display:flex;align-items:center;gap:8px;">
+            {% if ch.thumbnail %}<img src="{{ ch.thumbnail }}" style="width:20px;height:20px;border-radius:50%;">{% endif %}
+            {{ ch.name }}
+        </button>
+        {% endfor %}
+    </div>
+    <div id="all-stream-cards" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:10px;"></div>
+</div>
+{% endif %}
 
-    <label class="form-label">YouTube Stream Key</label>
-    <input class="form-input" type="password" id="stream-key" placeholder="xxxx-xxxx-xxxx-xxxx-xxxx">
-    <p style="font-size:0.75rem;opacity:0.4;margin-top:5px;">YouTube Studio → Go Live → Stream key</p>
+{% set default_ch = (channels | selectattr('is_default') | list | first) or (channels[0] if channels else none) %}
+<input type="hidden" id="active-channel-slug" value="{{ default_ch.slug if default_ch else 'default' }}">
+<input type="hidden" id="active-channel-name" value="{{ default_ch.name if default_ch else 'Default' }}">
 
-    <label class="form-label" style="margin-top:20px;">Select Video to Loop</label>
+<!-- ── Live Banner ─────────────────────────────────────── -->
+<div class="live-banner {% if not stream_status.active %}offline{% endif %}" id="live-banner">
+    <div style="display:flex;align-items:center;gap:16px;">
+        {% if stream_status.active %}
+        <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+        <div class="eq-bars">
+            {% for i in range(14) %}
+            <div class="eq-bar" style="--dur:{{ (0.4 + loop.index * 0.07)|round(2) }}s;--max:{{ (8 + (loop.index % 5) * 4) }}px;"></div>
+            {% endfor %}
+        </div>
+        <div>
+            <div style="font-weight:700;font-size:0.95rem;" id="banner-tag">{{ stream_status.tag or 'Stream' }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">
+                ⏱ <span id="elapsed-val">{{ stream_status.elapsed or '00:00:00' }}</span>
+                &nbsp;·&nbsp; 🔄 <span id="banner-reconnects">{{ stream_status.reconnects or 0 }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="offline-badge">⬛ OFFLINE</div>
+        <span style="font-size:0.85rem;color:var(--muted);">Bağlan ve kategori seçerek yayını başlat.</span>
+        {% endif %}
+    </div>
+    {% if stream_status.active %}
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span class="health-dot {% if stream_status.healthy %}health-ok{% else %}health-err{% endif %}" id="health-badge">
+            {{ '● Healthy' if stream_status.healthy else '● Checking' }}
+        </span>
+        <button class="btn-stop" onclick="stopStream()">⬛ Durdur</button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── Active Stream Stats ─────────────────────────────── -->
+{% if stream_status.active %}
+<div class="setup-box" style="background:rgba(255,30,30,0.05);border-color:rgba(255,50,50,0.18);">
+    <div class="stream-progress"><div class="stream-progress-fill"></div></div>
+    <div class="stream-stats">
+        <div class="stat-item">
+            <div class="s-label">Elapsed</div>
+            <div class="s-value green" id="stat-elapsed">{{ stream_status.elapsed or '00:00:00' }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="s-label">Started</div>
+            <div class="s-value" style="font-size:0.82rem;">{{ stream_status.started or '—' }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="s-label">Reconnects</div>
+            <div class="s-value yellow" id="stat-reconnects">{{ stream_status.reconnects or 0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="s-label">Data</div>
+            <div class="s-value {% if stream_status.data_status == 'sending' %}green{% elif stream_status.data_status == 'error' %}red{% endif %}" id="stat-data">
+                {{ stream_status.data_status|capitalize if stream_status.data_status else 'Idle' }}
+            </div>
+        </div>
+        <div class="stat-item">
+            <div class="s-label">Playlist</div>
+            <div class="s-value">{{ stream_status.playlist|length }} video</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Connect Box (API otomatik key) ─────────────────── -->
+<div class="connect-box">
+    <div class="connect-status">
+        <div class="connect-dot" id="connect-dot" style="background:rgba(255,255,255,0.25);"></div>
+        <span id="connect-label">Stream key hazır değil — YouTube'a bağlan</span>
+    </div>
+
+    {% if sk_store.get(default_ch.slug if default_ch else 'default') %}
+    <!-- Kaydedilmiş key var -->
+    <div class="key-display" id="key-display">
+        <span id="key-text">{{ sk_store.get(default_ch.slug if default_ch else 'default', '') | replace('x', '●') | truncate(32, True, '…') }}</span>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;" onclick="copyKey()">📋 Kopyala</button>
+    </div>
+    <input type="hidden" id="stream-key" value="{{ sk_store.get(default_ch.slug if default_ch else 'default', '') }}">
+    {% else %}
+    <div class="key-display" id="key-display" style="display:none;">
+        <span id="key-text"></span>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;" onclick="copyKey()">📋 Kopyala</button>
+    </div>
+    <input type="hidden" id="stream-key" value="">
+    {% endif %}
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn-primary" id="autokey-btn" onclick="autoGetKey()" style="padding:10px 20px;">
+            📡 YouTube'dan Key Al
+        </button>
+        <span style="font-size:0.78rem;color:var(--muted);" id="autokey-msg">API bağlı olduğu için key manuel girişe gerek yok.</span>
+    </div>
+    <div id="autokey-help" style="display:none;margin-top:12px;padding:12px 14px;background:rgba(255,204,0,0.07);border:1px solid rgba(255,204,0,0.2);border-radius:10px;font-size:0.8rem;line-height:1.6;color:#ffcc00;"></div>
+
+    <!-- Manuel override (gizli) -->
+    <div style="margin-top:14px;">
+        <span class="collapsible-toggle" onclick="toggleManual(this)">▶ Manuel Key Gir (opsiyonel)</span>
+        <div class="collapsible-body" id="manual-key-body">
+            <div style="display:flex;gap:8px;margin-top:10px;">
+                <input class="form-input" type="password" id="manual-key-input"
+                       placeholder="xxxx-xxxx-xxxx-xxxx-xxxx" autocomplete="off"
+                       style="flex:1;font-family:monospace;letter-spacing:1px;">
+                <button class="btn-ghost" onclick="applyManualKey()">✓ Uygula</button>
+                <button class="btn-ghost" onclick="toggleManualVisibility()">👁</button>
+            </div>
+            <p style="font-size:0.7rem;color:var(--muted);margin-top:5px;">YouTube Studio → Go Live → Stream Key</p>
+        </div>
+    </div>
+</div>
+
+<!-- ── Yayın Başlığı & Arka Plan ──────────────────────── -->
+<div class="setup-box" style="padding:18px 22px;">
+    <!-- Başlık değiştir -->
+    <p class="section-label">✏️ Canlı Yayın Başlığı</p>
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <input class="form-input" type="text" id="stream-title-input"
+               placeholder="Başlığı değiştir..." maxlength="100" style="flex:1;">
+        <button class="btn-ghost" onclick="updateStreamTitle()" style="white-space:nowrap;">Güncelle</button>
+    </div>
+    <div id="title-result" style="display:none;margin-bottom:12px;font-size:0.82rem;"></div>
+
+    <!-- Arka Plan -->
+    <p class="section-label">🎥 Arka Plan Videosu <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.72rem;">(opsiyonel)</span></p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        <span style="font-size:0.7rem;color:var(--muted);align-self:center;">Hazır:</span>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;" onclick="setBgPreset('fireplace')">🔥 Şömine</button>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;" onclick="setBgPreset('rain')">🌧️ Yağmur</button>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;" onclick="setBgPreset('forest')">🌲 Orman</button>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;" onclick="setBgPreset('ocean')">🌊 Okyanus</button>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;" onclick="setBgPreset('night')">🌃 Gece</button>
+        <button class="btn-ghost" style="padding:4px 10px;font-size:0.75rem;color:var(--muted);" onclick="setBgPreset('')">✕ Temizle</button>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <input class="form-input" type="text" id="bg-video-url"
+               placeholder="https://.../video.mp4 veya YouTube linki" style="flex:1;">
+        <button class="btn-ghost" onclick="testBgVideo()" id="bg-test-btn" style="white-space:nowrap;">⬇️ Test</button>
+    </div>
+    <div id="bg-video-result" style="display:none;margin-top:8px;font-size:0.82rem;"></div>
+
+    <!-- Dosya yükle -->
+    <div style="margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="file" id="bg-video-file" accept="video/*" style="display:none;" onchange="uploadBgVideo(this)">
+            <button class="btn-ghost" style="padding:7px 14px;" onclick="document.getElementById('bg-video-file').click()">
+                📁 Dosya Yükle
+            </button>
+            <span id="bg-upload-label" style="font-size:0.78rem;color:var(--muted);">MP4 &lt;100MB</span>
+        </label>
+        <div id="bg-upload-progress" style="display:none;margin-top:8px;">
+            <div style="height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;">
+                <div id="bg-upload-bar" style="height:100%;background:var(--accent);width:0%;transition:width 0.3s;border-radius:2px;"></div>
+            </div>
+            <div id="bg-upload-status" style="font-size:0.75rem;color:var(--muted);margin-top:4px;">Yükleniyor...</div>
+        </div>
+    </div>
+
+    {% if stream_status.active and stream_status.bg_video %}
+    <div style="margin-top:8px;font-size:0.78rem;color:#00e676;">
+        ✅ Aktif: <span style="font-family:monospace;opacity:0.7;">{{ stream_status.bg_video[:60] }}{% if stream_status.bg_video|length > 60 %}…{% endif %}</span>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── Mode Tabs ──────────────────────────────────────── -->
+<div class="mode-tabs">
+    <button class="mode-tab active" id="tab-tag"    onclick="setMode('tag')">🏷️ Kategori Döngüsü</button>
+    <button class="mode-tab"        id="tab-single" onclick="setMode('single')">🎬 Tek Video</button>
+</div>
+
+<!-- ── Tag Mode ───────────────────────────────────────── -->
+<div class="setup-box" id="panel-tag">
+    <h2 style="font-size:0.95rem;margin-bottom:4px;">Kategori Seç</h2>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0;">Seçilen kategorideki tüm videolar sonsuz döngüde yayınlanır.</p>
+    {% if tags %}
+    <div class="tag-grid">
+        {% for tag, paths in tags.items() %}
+        {% set tl = tag.lower() %}
+        {% if 'jazz' in tl %}{% set emoji = '🎷' %}
+        {% elif 'lofi' in tl or 'chill' in tl %}{% set emoji = '🌙' %}
+        {% elif 'cyber' in tl or 'synth' in tl %}{% set emoji = '🤖' %}
+        {% elif 'afro' in tl or 'house' in tl %}{% set emoji = '🌍' %}
+        {% elif 'rock' in tl or 'metal' in tl %}{% set emoji = '🎸' %}
+        {% elif 'ambient' in tl or 'nature' in tl %}{% set emoji = '🌿' %}
+        {% elif 'piano' in tl or 'classic' in tl %}{% set emoji = '🎹' %}
+        {% elif 'hip' in tl or 'rap' in tl %}{% set emoji = '🎤' %}
+        {% elif '80' in tl %}{% set emoji = '📼' %}
+        {% elif 'meditation' in tl or 'zen' in tl %}{% set emoji = '🧘' %}
+        {% else %}{% set emoji = '🎵' %}{% endif %}
+        <div class="tag-card" id="tc-{{ loop.index }}" onclick="selectTag('{{ tag }}', {{ loop.index }})">
+            <span class="tag-emoji">{{ emoji }}</span>
+            <div class="tag-name">{{ tag }}</div>
+            <div class="tag-count">{{ paths|length }} video</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="color:var(--muted);margin-top:20px;font-size:0.85rem;">Henüz video üretilmedi. Dashboard'dan video üret.</div>
+    {% endif %}
+    <div style="display:flex;align-items:center;gap:20px;margin-top:18px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;">
+            <input type="checkbox" id="shuffle-tog" style="width:15px;height:15px;accent-color:var(--accent);">
+            🔀 Karışık sıra
+        </label>
+        <span id="selected-tag-label" style="font-size:0.82rem;color:var(--muted);">Kategori seçilmedi</span>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn-primary" id="start-tag-btn" onclick="startTagStream()">🔴 Yayını Başlat</button>
+        <button class="btn-stop" onclick="stopStream()">⬛ Durdur</button>
+    </div>
+</div>
+
+<!-- ── Single Video Mode ──────────────────────────────── -->
+<div class="setup-box" id="panel-single" style="display:none;">
+    <h2 style="font-size:0.95rem;margin-bottom:16px;">🎬 Tek Video Seç</h2>
     <select class="form-input" id="stream-video" style="cursor:pointer;">
-        <option value="">-- Select a generated video --</option>
+        <option value="">-- Video seç --</option>
         {% for v in videos %}
         <option value="{{ v }}" {% if prefill == v %}selected{% endif %}>{{ v }}</option>
         {% endfor %}
     </select>
-
-    <div style="display:flex;gap:15px;margin-top:28px;">
-        <button class="btn-primary" onclick="startStream()">🔴 Start 24/7 Stream</button>
-        <button class="btn-ghost" onclick="stopStream()">⬛ Stop Stream</button>
+    <div style="display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;">
+        <button class="btn-primary" id="start-single-btn" onclick="startSingleStream()">🔴 Yayını Başlat</button>
+        <button class="btn-stop" onclick="stopStream()">⬛ Durdur</button>
     </div>
-
-    {% if stream_status.active %}
-    <div style="margin-top:24px;padding:16px;background:rgba(255,0,0,0.05);border:1px solid rgba(255,0,0,0.15);border-radius:12px;font-size:0.88rem;line-height:1.8;">
-        <strong>🔴 Currently Broadcasting</strong><br>
-        🎬 Video: <span style="color:#00d4ff;">{{ stream_status.video }}</span><br>
-        ⏰ Started: {{ stream_status.started }}<br>
-        🔑 Key: {{ stream_status.key }}
-    </div>
-    {% endif %}
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-    function startStream() {
-        const key = document.getElementById('stream-key').value.trim();
-        const video = document.getElementById('stream-video').value;
-        if (!key) return alert('Stream key required!');
-        if (!video) return alert('Select a video to stream!');
-        fetch('/api/stream/start', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({stream_key: key, video: video})
-        }).then(r => r.json()).then(d => { alert(d.message || d.error); location.reload(); });
-    }
+let selectedTag = '';
+let pollTimer   = null;
+const SK_STORE  = {{ sk_store | tojson }};
 
-    function stopStream() {
-        fetch('/api/stream/stop', {method: 'POST'})
-        .then(r => r.json()).then(d => { alert(d.message); location.reload(); });
+const BG_PRESETS = {
+    fireplace: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    rain:      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    forest:    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+    ocean:     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    night:     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+};
+
+// ── Init ───────────────────────────────────────────────
+(function init() {
+    const slug = document.getElementById('active-channel-slug').value;
+    updateConnectStatus(SK_STORE[slug] || SK_STORE['default'] || '');
+})();
+
+// ── Mode ──────────────────────────────────────────────
+function setMode(mode) {
+    document.getElementById('panel-tag').style.display    = mode === 'tag'    ? '' : 'none';
+    document.getElementById('panel-single').style.display = mode === 'single' ? '' : 'none';
+    document.getElementById('tab-tag').classList.toggle('active',    mode === 'tag');
+    document.getElementById('tab-single').classList.toggle('active', mode === 'single');
+}
+
+// ── Channel select ────────────────────────────────────
+function selectChannel(slug, name, el) {
+    document.getElementById('active-channel-slug').value = slug;
+    document.getElementById('active-channel-name').value = name;
+    document.querySelectorAll('#ch-selector .vstyle-btn').forEach(b => b.classList.remove('active'));
+    if (el) el.classList.add('active');
+    // Kanalın kayıtlı key'ini yükle
+    const key = SK_STORE[slug] || '';
+    document.getElementById('stream-key').value = key;
+    updateConnectStatus(key);
+}
+
+// ── Auto Key ──────────────────────────────────────────
+function updateConnectStatus(key) {
+    const dot   = document.getElementById('connect-dot');
+    const label = document.getElementById('connect-label');
+    const disp  = document.getElementById('key-display');
+    const txt   = document.getElementById('key-text');
+    if (key) {
+        dot.className   = 'connect-dot dot-ready';
+        label.textContent = '✅ Stream key hazır — yayını başlatabilirsin';
+        label.style.color = '#00e676';
+        disp.style.display = '';
+        // Maskelenmiş göster
+        txt.textContent = key.substring(0, 4) + '-••••-••••-••••-' + key.slice(-4);
+    } else {
+        dot.className   = 'connect-dot dot-idle';
+        label.textContent = 'Stream key yok — aşağıdan otomatik al';
+        label.style.color = '';
+        disp.style.display = 'none';
     }
+}
+
+async function autoGetKey() {
+    const slug  = document.getElementById('active-channel-slug').value || 'default';
+    const btn   = document.getElementById('autokey-btn');
+    const msg   = document.getElementById('autokey-msg');
+    const dot   = document.getElementById('connect-dot');
+    const helpBox = document.getElementById('autokey-help');
+    btn.textContent = '⏳ Alınıyor...'; btn.disabled = true;
+    dot.className = 'connect-dot dot-spin';
+    msg.textContent = 'YouTube API\'ye bağlanıyor...';
+    msg.style.color = '';
+    if (helpBox) helpBox.style.display = 'none';
+
+    try {
+        const r = await fetch('/api/stream/autokey', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ channel_slug: slug })
+        });
+        const d = await r.json();
+        if (d.ok && d.key) {
+            document.getElementById('stream-key').value = d.key;
+            SK_STORE[slug] = d.key;
+            updateConnectStatus(d.key);
+            msg.textContent = d.broadcast_id ? `✅ Key alındı · Broadcast: ${d.broadcast_id.substring(0,12)}…` : '✅ Key alındı!';
+            msg.style.color = '#00e676';
+        } else if (d.error === 'not_enabled') {
+            dot.className = 'connect-dot dot-idle';
+            msg.textContent = '⚠️ ' + d.message;
+            msg.style.color = '#ffcc00';
+            if (helpBox) { helpBox.innerHTML = `<strong>Ne yapmalısın?</strong><br>${d.help}<br><br>Etkinleştirince stream key'i manuel gir (aşağıdaki ▶ Manuel Key Gir bölümünden).`; helpBox.style.display = ''; }
+            // Manuel key bölümünü otomatik aç
+            const body = document.getElementById('manual-key-body');
+            const tog  = document.querySelector('.collapsible-toggle');
+            if (body && !body.classList.contains('open')) { body.classList.add('open'); if (tog) tog.textContent = '▼ Manuel Key Gir (opsiyonel)'; }
+        } else {
+            dot.className = 'connect-dot dot-idle';
+            msg.textContent = '❌ ' + (d.message || d.error || 'Hata');
+            msg.style.color = '#ff5252';
+        }
+    } catch(e) {
+        dot.className = 'connect-dot dot-idle';
+        msg.textContent = '❌ Bağlantı hatası';
+        msg.style.color = '#ff5252';
+    }
+    btn.textContent = '📡 YouTube\'dan Key Al'; btn.disabled = false;
+}
+
+function copyKey() {
+    const key = document.getElementById('stream-key').value;
+    if (!key) return;
+    navigator.clipboard.writeText(key).then(() => {
+        const btn = event.target;
+        btn.textContent = '✅ Kopyalandı'; setTimeout(() => btn.textContent = '📋 Kopyala', 2000);
+    });
+}
+
+// ── Manual Key ────────────────────────────────────────
+function toggleManual(el) {
+    const body = document.getElementById('manual-key-body');
+    body.classList.toggle('open');
+    el.textContent = body.classList.contains('open') ? '▼ Manuel Key Gir (opsiyonel)' : '▶ Manuel Key Gir (opsiyonel)';
+}
+function toggleManualVisibility() {
+    const inp = document.getElementById('manual-key-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function applyManualKey() {
+    const key = document.getElementById('manual-key-input').value.trim();
+    if (!key) return;
+    document.getElementById('stream-key').value = key;
+    const slug = document.getElementById('active-channel-slug').value || 'default';
+    SK_STORE[slug] = key;
+    updateConnectStatus(key);
+    document.getElementById('autokey-msg').textContent = 'Manuel key uygulandı.';
+    document.getElementById('autokey-msg').style.color = '#00e676';
+}
+
+// ── Tag select ────────────────────────────────────────
+function selectTag(tag, idx) {
+    selectedTag = tag;
+    document.querySelectorAll('.tag-card').forEach(c => c.classList.remove('active'));
+    const el = document.getElementById('tc-' + idx);
+    if (el) el.classList.add('active');
+    document.getElementById('selected-tag-label').textContent = '✓ ' + tag + ' seçildi';
+}
+
+// ── Start / Stop ──────────────────────────────────────
+function startTagStream() {
+    const key = document.getElementById('stream-key').value.trim();
+    if (!key)         { alert('Önce "YouTube\'dan Key Al" butonuna tıkla!'); return; }
+    if (!selectedTag) { alert('Kategori seç!'); return; }
+    const shuffle  = document.getElementById('shuffle-tog').checked;
+    const bg_video = document.getElementById('bg-video-url').value.trim();
+    _doStart({ mode: 'tag', stream_key: key, tag: selectedTag, shuffle, bg_video });
+}
+
+function startSingleStream() {
+    const key   = document.getElementById('stream-key').value.trim();
+    const video = document.getElementById('stream-video').value;
+    const bg_video = document.getElementById('bg-video-url').value.trim();
+    if (!key)   { alert('Önce "YouTube\'dan Key Al" butonuna tıkla!'); return; }
+    if (!video) { alert('Video seç!'); return; }
+    _doStart({ mode: 'single', stream_key: key, video, tag: 'default', bg_video });
+}
+
+function _doStart(payload) {
+    payload.channel_slug = document.getElementById('active-channel-slug').value || 'default';
+    const btns = document.querySelectorAll('#start-tag-btn, #start-single-btn');
+    btns.forEach(b => { b.textContent = '⏳ Başlatılıyor...'; b.disabled = true; });
+    fetch('/api/stream/start', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    }).then(r => r.json()).then(d => {
+        btns.forEach(b => { b.textContent = '🔴 Yayını Başlat'; b.disabled = false; });
+        if (d.ok) { startPolling(); setTimeout(() => location.reload(), 1500); }
+        else      { alert(d.message || d.error || 'Hata'); }
+    }).catch(() => { btns.forEach(b => { b.textContent = '🔴 Yayını Başlat'; b.disabled = false; }); });
+}
+
+function stopStream(slug) {
+    const s = slug || document.getElementById('active-channel-slug').value || 'default';
+    if (!confirm('Yayını durdurmak istediğine emin misin?')) return;
+    fetch('/api/stream/stop', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ channel_slug: s })
+    }).then(r => r.json()).then(() => location.reload());
+}
+
+// ── Polling ───────────────────────────────────────────
+function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollStatus, 3000);
+}
+function pollStatus() {
+    fetch('/api/stream/all').then(r => r.json()).then(data => {
+        const streams   = data.streams || [];
+        const activeSlug = document.getElementById('active-channel-slug').value;
+        const cur = streams.find(s => s.slug === activeSlug) || streams.find(s => s.active) || {};
+
+        const upd = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.textContent = val; };
+        upd('elapsed-val', cur.elapsed);
+        upd('stat-elapsed', cur.elapsed);
+        upd('stat-reconnects', cur.reconnects ?? 0);
+        upd('banner-reconnects', cur.reconnects ?? 0);
+
+        const dtEl = document.getElementById('stat-data');
+        if (dtEl && cur.data_status) {
+            dtEl.textContent = cur.data_status.charAt(0).toUpperCase() + cur.data_status.slice(1);
+            dtEl.className = 's-value ' + (cur.data_status === 'sending' ? 'green' : cur.data_status === 'error' ? 'red' : '');
+        }
+        const hEl = document.getElementById('health-badge');
+        if (hEl) {
+            if (cur.reconnecting) { hEl.textContent = '● Yeniden bağlanıyor…'; hEl.className = 'health-dot health-err'; }
+            else { hEl.textContent = cur.healthy ? '● Healthy' : '● Error'; hEl.className = 'health-dot ' + (cur.healthy ? 'health-ok' : 'health-err'); }
+        }
+
+        // Tüm aktif kanalların mini kartları
+        const container = document.getElementById('all-stream-cards');
+        if (container) {
+            const active = streams.filter(s => s.active || s.reconnecting);
+            container.innerHTML = active.map(s => `
+                <div class="stream-mini-card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div class="live-dot"></div>
+                            <span style="font-weight:700;font-size:0.85rem;">${s.slug === 'default' ? 'Default' : s.slug}</span>
+                        </div>
+                        <button onclick="stopStream('${s.slug}')" class="btn-stop" style="padding:4px 10px;font-size:0.75rem;">⬛ Durdur</button>
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--muted);">
+                        ⏱ ${s.elapsed||'00:00:00'} · 🔄 ${s.reconnects||0} ·
+                        <span style="color:${s.healthy?'#00e676':'#ff5252'}">${s.healthy?'● Healthy':'● Error'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        if (cur.slug && !cur.active && !cur.reconnecting) {
+            clearInterval(pollTimer); location.reload();
+        }
+    }).catch(() => {});
+}
+
+// ── Title Update ──────────────────────────────────────
+function updateStreamTitle() {
+    const title = document.getElementById('stream-title-input').value.trim();
+    if (!title) { alert('Başlık girin!'); return; }
+    const btn = event.target;
+    btn.textContent = '⏳'; btn.disabled = true;
+    const channel_slug = document.getElementById('active-channel-slug').value || null;
+    fetch('/api/stream/title', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ title, channel_slug })
+    }).then(r => r.json()).then(d => {
+        btn.textContent = 'Güncelle'; btn.disabled = false;
+        const res = document.getElementById('title-result');
+        res.style.display = '';
+        res.style.color = d.ok ? '#00e676' : '#ff5252';
+        res.textContent = d.ok ? ('✅ ' + d.message) : ('❌ ' + d.message);
+    }).catch(() => { btn.textContent = 'Güncelle'; btn.disabled = false; });
+}
+
+// ── BG Video ──────────────────────────────────────────
+function setBgPreset(key) {
+    document.getElementById('bg-video-url').value = key ? (BG_PRESETS[key] || '') : '';
+    document.getElementById('bg-video-result').style.display = 'none';
+}
+
+function testBgVideo() {
+    const url = document.getElementById('bg-video-url').value.trim();
+    if (!url) { alert('URL girin!'); return; }
+    const btn = document.getElementById('bg-test-btn');
+    const res = document.getElementById('bg-video-result');
+    btn.textContent = '⏳'; btn.disabled = true;
+    res.style.display = ''; res.style.color = 'var(--muted)'; res.textContent = 'İndiriliyor...';
+    fetch('/api/stream/bg-video', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ url })
+    }).then(r => r.json()).then(d => {
+        btn.textContent = '⬇️ Test'; btn.disabled = false;
+        res.style.color = d.ok ? '#00e676' : '#ff5252';
+        res.textContent = d.ok ? ('✅ ' + d.message) : ('❌ ' + d.message);
+    }).catch(() => { btn.textContent = '⬇️ Test'; btn.disabled = false; });
+}
+
+function uploadBgVideo(input) {
+    const file = input.files[0]; if (!file) return;
+    const bar  = document.getElementById('bg-upload-bar');
+    const prog = document.getElementById('bg-upload-progress');
+    const stat = document.getElementById('bg-upload-status');
+    document.getElementById('bg-upload-label').textContent = file.name;
+    prog.style.display = ''; bar.style.width = '0%'; bar.style.background = 'var(--accent)';
+    stat.textContent = 'Yükleniyor...'; stat.style.color = 'var(--muted)';
+    const fd = new FormData(); fd.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/stream/upload-bg');
+    xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+            const pct = Math.round(e.loaded / e.total * 100);
+            bar.style.width = pct + '%';
+            stat.textContent = pct >= 100 ? '⏳ Kaydediliyor...' : `Yükleniyor... %${pct}`;
+        }
+    };
+    xhr.onload = () => {
+        const d = JSON.parse(xhr.responseText);
+        if (d.ok) {
+            bar.style.background = '#00e676'; stat.style.color = '#00e676';
+            stat.textContent = `✅ Yüklendi (${d.size_mb} MB)`;
+            document.getElementById('bg-video-url').value = '';
+        } else {
+            bar.style.background = '#ff5252'; stat.style.color = '#ff5252';
+            stat.textContent = '❌ ' + d.message;
+        }
+    };
+    xhr.onerror = () => { stat.style.color = '#ff5252'; stat.textContent = '❌ Yükleme başarısız'; };
+    xhr.send(fd);
+}
+
+// ── Auto-start polling if live ────────────────────────
+{% if stream_status.active %}
+startPolling();
+{% endif %}
 </script>
 {% endblock %}

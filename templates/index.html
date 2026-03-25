@@ -1,204 +1,416 @@
 {% extends "base.html" %}
+
 {% block title %}Dashboard{% endblock %}
 
+
+
 {% block head %}
+
 <style>
+
     .gen-box {
+
         background: linear-gradient(135deg, rgba(112,0,255,0.1), rgba(0,212,255,0.05));
+
         border: 1px solid rgba(112,0,255,0.22);
+
         border-radius: 20px;
+
         padding: 28px;
+
         margin-bottom: 30px;
+
     }
 
-    .style-pills { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
-    .style-pill {
+
+
+    /* Genre preset butonları */
+    .genre-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .genre-btn {
         background: rgba(255,255,255,0.05);
         border: 1px solid var(--border);
-        padding: 6px 14px;
+        padding: 7px 14px;
         border-radius: 20px;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         cursor: pointer;
-        transition: 0.2s;
+        transition: 0.18s;
+        color: var(--text);
+        font-family: inherit;
+        white-space: nowrap;
     }
-    .style-pill.active, .style-pill:hover {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: white;
+    .genre-btn:hover  { background: rgba(124,58,255,0.15); border-color: rgba(124,58,255,0.4); }
+    .genre-btn.active { background: rgba(124,58,255,0.25); border-color: var(--accent); color: #fff; }
+
+    /* Görsel stil butonları */
+    .vstyle-btn {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        padding: 7px 14px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: 0.18s;
+        color: var(--text);
+        font-family: inherit;
     }
+    .vstyle-btn:hover  { background: rgba(124,58,255,0.15); border-color: rgba(124,58,255,0.4); }
+    .vstyle-btn.active { background: rgba(124,58,255,0.25); border-color: var(--accent); color: #fff; }
 
-    .input-row { display: flex; gap: 12px; margin-top: 14px; }
 
-    .options-row {
-        display: flex;
-        gap: 22px;
-        margin-top: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .toggle-label { display: flex; align-items: center; gap: 8px; font-size: 0.83rem; opacity: 0.8; cursor: pointer; }
 
     .task-row {
+
         background: var(--glass);
+
         border: 1px solid var(--border);
+
         border-left: 3px solid var(--accent);
+
         border-radius: 12px;
+
         padding: 14px 18px;
+
         margin-bottom: 9px;
+
         display: flex;
+
         justify-content: space-between;
+
         align-items: center;
+
         animation: fadeUp 0.3s ease;
+
     }
+
 </style>
+
 {% endblock %}
 
+
+
 {% block content %}
+
 <div class="page-header">
+
     <div>
+
         <h1>System Pulse</h1>
+
         <p>Managing {{ channels|length }} automated channels across Europe Node.</p>
+
     </div>
+
     <button class="btn-ghost" onclick="refreshStatus()">↻ Refresh</button>
+
 </div>
 
+
+
 <!-- Stats -->
+
 <div class="grid-3">
+
     <div class="stat-card">
+
         <h3>Total Mastered Videos</h3>
+
         <div class="val" id="stat-videos">{{ stats.total_videos }}</div>
+
     </div>
+
     <div class="stat-card">
+
         <h3>API Credits Remaining</h3>
+
         <div class="val" id="stat-credits">{{ stats.credits_used }}</div>
+
     </div>
+
     <div class="stat-card">
+
         <h3>Active Streams</h3>
+
         <div class="val" id="stat-streams">{{ stats.active_streams }}</div>
+
     </div>
+
 </div>
+
+
 
 <!-- Forge Box -->
 <div class="gen-box">
-    <h2>🎬 AI Video Forge</h2>
-    <p style="opacity:0.55;font-size:0.88rem;margin-top:4px;">Generate a high-fidelity music video and push to your channels.</p>
-
-    <div class="style-pills">
-        <div class="style-pill active" onclick="selectStyle(this,'Cinematic')">Cinematic</div>
-        <div class="style-pill" onclick="selectStyle(this,'Anime')">Anime</div>
-        <div class="style-pill" onclick="selectStyle(this,'Cyberpunk')">Cyberpunk</div>
-        <div class="style-pill" onclick="selectStyle(this,'Realistic')">Realistic</div>
-        <div class="style-pill" onclick="selectStyle(this,'Digital Art')">Digital Art</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div>
+            <h2 style="font-size:1.2rem;margin-bottom:3px;">🎬 AI Video Forge</h2>
+            <p style="opacity:0.5;font-size:0.82rem;">Müzik + görsel + video otomatik üretilir ve YouTube'a yüklenir.</p>
+        </div>
+        <span style="font-size:0.75rem;display:flex;align-items:center;gap:6px;color:#00e676;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#00e676;box-shadow:0 0 6px #00e676;display:inline-block;"></span>
+            Auto Upload ON
+        </span>
     </div>
 
-    <div class="input-row">
-        <input class="form-input" type="text" id="genre" placeholder="Describe the vibe (e.g., Cyberpunk Lofi, Epic Cinematic)">
-        <button class="btn-primary" onclick="forgeVideo()" id="forge-btn">⚡ Forge Video</button>
+    <!-- Hızlı genre seçici -->
+    <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;opacity:0.4;margin-bottom:8px;font-weight:600;">Hızlı Genre Seç</p>
+    <div class="genre-presets">
+        <button class="genre-btn" onclick="setGenre(this,'smooth jazz saxophone late night city vibes')">🎷 Jazz</button>
+        <button class="genre-btn" onclick="setGenre(this,'lofi hip hop chill beats rainy evening study')">🎧 Lofi</button>
+        <button class="genre-btn" onclick="setGenre(this,'afro house deep bass warm sunset groove')">🌍 Afro House</button>
+        <button class="genre-btn" onclick="setGenre(this,'cyberpunk dark synthwave neon underground')">🌆 Cyberpunk</button>
+        <button class="genre-btn" onclick="setGenre(this,'classical piano emotional strings orchestral')">🎹 Classical</button>
+        <button class="genre-btn" onclick="setGenre(this,'deep house melodic progressive sunset beach')">🏖️ Deep House</button>
+        <button class="genre-btn" onclick="setGenre(this,'80s retro synthwave neon drive nostalgia')">📼 80s</button>
+        <button class="genre-btn" onclick="setGenre(this,'ambient meditation zen nature soundscape')">🧘 Ambient</button>
     </div>
 
-    <div class="options-row">
-        <label class="toggle-label">
-            <input type="checkbox" id="toggle-lyrics" checked> Lyrics Sync
-        </label>
-        <label class="toggle-label">
-            <input type="checkbox" id="toggle-upload" {% if not yt_connected %}disabled{% endif %}> Auto Upload
-        </label>
-        {% if not yt_connected %}
-        <span style="font-size:0.75rem;opacity:0.38;">(Connect YouTube to enable)</span>
-        {% endif %}
+    <!-- Müzik açıklaması -->
+    <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;opacity:0.4;margin:16px 0 8px;font-weight:600;">Müzik & Atmosfer</p>
+    <textarea class="form-input" id="genre" rows="2"
+        placeholder="Örn: smooth jazz saxophone late night city vibes, melancholic and soulful"
+        style="resize:none;line-height:1.5;"></textarea>
+
+    <!-- Görsel stil + süre -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+        <div>
+            <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;opacity:0.4;margin-bottom:8px;font-weight:600;">Görsel Stil</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="vstyle-btn active" onclick="selectStyle(this,'Cinematic')">🎞 Sinematik</button>
+                <button class="vstyle-btn" onclick="selectStyle(this,'Realistic')">📷 Gerçekçi</button>
+                <button class="vstyle-btn" onclick="selectStyle(this,'Digital Art')">🎨 Sanatsal</button>
+            </div>
+        </div>
+        <div>
+            <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;opacity:0.4;margin-bottom:8px;font-weight:600;">Video Süresi</p>
+            <select class="form-input" id="min-duration" style="padding:8px 12px;">
+                <option value="0">Otomatik (~3dk)</option>
+                <option value="300">5 Dakika</option>
+                <option value="600">10 Dakika</option>
+                <option value="1800">30 Dakika</option>
+                <option value="3600">1 Saat</option>
+                <option value="7200">2 Saat</option>
+            </select>
+        </div>
     </div>
+
+    <!-- Kanal Seçici (birden fazla kanal varsa göster) -->
+    {% if channels and channels|length > 1 %}
+    <div style="margin-top:14px;">
+        <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;opacity:0.4;margin-bottom:8px;font-weight:600;">📺 Kanal Seç</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="channel-selector">
+            {% for ch in channels %}
+            <button class="vstyle-btn {% if ch.is_default %}active{% endif %}"
+                    onclick="selectChannel(this,'{{ ch.slug }}')"
+                    data-slug="{{ ch.slug }}"
+                    style="display:flex;align-items:center;gap:8px;">
+                {% if ch.thumbnail %}
+                <img src="{{ ch.thumbnail }}" style="width:20px;height:20px;border-radius:50%;">
+                {% endif %}
+                {{ ch.name }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {# Varsayılan olarak is_default=True olan kanalı seç, yoksa ilki #}
+    {% set default_ch = (channels | selectattr('is_default') | list | first) or channels[0] %}
+    <input type="hidden" id="selected-channel" value="{{ default_ch.slug if default_ch else '' }}">
+    {% else %}
+    <input type="hidden" id="selected-channel" value="">
+    {% endif %}
+
+    <!-- Forge butonu -->
+    <button class="btn-primary" onclick="forgeVideo()" id="forge-btn"
+        style="width:100%;margin-top:18px;padding:14px;font-size:1rem;justify-content:center;">
+        ⚡ Video Üret & YouTube'a Yükle
+    </button>
 </div>
+
+
 
 <!-- Task Queue -->
+
 <h3>⚙️ Active Production Queue</h3>
+
 <div id="task-feed" style="margin-bottom:36px;">
+
     {% if tasks %}
+
         {% for task in tasks %}
+
         <div class="task-row">
+
             <div>
+
                 <strong>#{{ task.id }} {{ task.name }}</strong>
+
                 {% if task.yt_url %}
+
                 <a href="{{ task.yt_url }}" target="_blank" style="font-size:0.78rem;color:var(--accent2);margin-left:10px;">▶ YouTube</a>
+
                 {% endif %}
+
             </div>
+
             <span style="font-size:0.83rem;{% if 'Success' in task.status or 'Uploaded' in task.status %}color:#00ff88{% elif 'Error' in task.status %}color:#ff4444{% else %}color:#ffaa00{% endif %};">
+
                 {{ task.status }}
+
             </span>
+
         </div>
+
         {% endfor %}
+
     {% else %}
+
     <p style="opacity:0.38;font-size:0.85rem;">No active tasks. Start forging your first video! ⚡</p>
+
     {% endif %}
+
 </div>
+
+
 
 <!-- Channels -->
+
 <h3>📺 Connected Channels</h3>
+
 <div class="grid-auto">
+
     {% for ch in channels %}
+
     <div class="glass-card">
+
         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+
             <div>
+
                 <h2 style="font-size:1.05rem;">{{ ch.name }}</h2>
+
                 <p style="opacity:0.5;font-size:0.82rem;margin-top:4px;">{{ ch.subs }} Subscribers</p>
+
             </div>
+
             <span class="badge badge-{{ ch.status|lower }}">{{ ch.status }}</span>
+
         </div>
+
         <div style="display:flex;gap:10px;">
+
             <button class="btn-ghost" style="flex:1;">Analytics</button>
+
             <button class="btn-ghost" style="flex:1;">Settings</button>
+
         </div>
+
     </div>
+
     {% endfor %}
+
 </div>
+
 {% endblock %}
 
+
+
 {% block scripts %}
+
 <script>
+
     let currentStyle = 'Cinematic';
 
+    function setGenre(el, text) {
+        document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('genre').value = text;
+    }
+
     function selectStyle(el, style) {
-        document.querySelectorAll('.style-pill').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.vstyle-btn').forEach(p => p.classList.remove('active'));
         el.classList.add('active');
         currentStyle = style;
     }
 
+    function selectChannel(el, slug) {
+        document.querySelectorAll('#channel-selector .vstyle-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('selected-channel').value = slug;
+    }
+
     function forgeVideo() {
         const genre = document.getElementById('genre').value.trim();
-        if (!genre) return alert('Please describe the vibe first!');
+        if (!genre) {
+            document.getElementById('genre').style.borderColor = 'rgba(255,80,80,0.6)';
+            document.getElementById('genre').focus();
+            setTimeout(() => document.getElementById('genre').style.borderColor = '', 2000);
+            return;
+        }
+        const minDur = parseInt(document.getElementById('min-duration').value) || 0;
+        const channelSlug = document.getElementById('selected-channel').value || null;
         const btn = document.getElementById('forge-btn');
-        btn.textContent = '⏳ Starting...'; btn.disabled = true;
+        btn.innerHTML = '⏳ Başlatılıyor...'; btn.disabled = true;
+
         fetch('/api/generate', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 genre: genre, style: currentStyle,
-                lyrics: document.getElementById('toggle-lyrics').checked,
-                auto_upload: document.getElementById('toggle-upload').checked
+                lyrics: false, auto_upload: true,
+                min_duration: minDur,
+                channel_slug: channelSlug
             })
-        }).then(r=>r.json()).then(d=>{
-            btn.textContent = '⚡ Forge Video'; btn.disabled = false;
-            if (d.status === 'success') { document.getElementById('genre').value = ''; refreshStatus(); }
-        }).catch(()=>{ btn.textContent = '⚡ Forge Video'; btn.disabled = false; });
+        }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(d=>{
+            btn.innerHTML = '⚡ Video Üret & YouTube\'a Yükle'; btn.disabled = false;
+            if (d.status === 'success') {
+                document.getElementById('genre').value = '';
+                document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+                refreshStatus();
+            } else if (d.message) {
+                alert('Hata: ' + d.message);
+            }
+        }).catch(e=>{ btn.innerHTML = '⚡ Video Üret & YouTube\'a Yükle'; btn.disabled = false; console.error(e); });
     }
 
+
+
     function refreshStatus() {
+
         fetch('/api/status').then(r=>r.json()).then(d=>{
+
             if (d.stats) {
+
                 document.getElementById('stat-videos').textContent = d.stats.total_videos;
+
                 document.getElementById('stat-credits').textContent = d.stats.credits_used;
+
                 document.getElementById('stat-streams').textContent = d.stats.active_streams;
+
             }
+
             if (d.tasks && d.tasks.length > 0) {
                 document.getElementById('task-feed').innerHTML = d.tasks.slice().reverse().map(t => {
                     const cls = t.status.includes('Success')||t.status.includes('Uploaded') ? '#00ff88'
                         : t.status.includes('Error')||t.status.includes('Failed') ? '#ff4444' : '#ffaa00';
-                    const yt = t.yt_url ? `<a href="${t.yt_url}" target="_blank" style="font-size:0.78rem;color:#00d4ff;margin-left:10px;">▶ YouTube</a>` : '';
+                    const yt = t.yt_url ? `<a href="${t.yt_url}" target="_blank" style="font-size:0.78rem;color:#00d4ff;margin-left:10px;">&#9654; YouTube</a>` : '';
                     return `<div class="task-row"><div><strong>#${t.id} ${t.name}</strong>${yt}</div><span style="font-size:0.83rem;color:${cls};">${t.status}</span></div>`;
                 }).join('');
             }
+            maybeScheduleRefresh(d.tasks);
         });
     }
 
-    setInterval(refreshStatus, 5000);
+    function maybeScheduleRefresh(tasks) {
+        const running = tasks && tasks.some(t =>
+            !t.status.includes('Success') && !t.status.includes('Error') &&
+            !t.status.includes('Uploaded') && !t.status.includes('Failed')
+        );
+        if (running) setTimeout(refreshStatus, 4000);
+    }
+
+    // Initial load on page open
+    refreshStatus();
+
 </script>
+
 {% endblock %}
+

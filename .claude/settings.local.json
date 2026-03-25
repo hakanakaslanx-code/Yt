@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "WebFetch(domain:www.youtube.com)",
+      "WebFetch(domain:kie.ai)",
+      "Bash(python deploy_latest.py)",
+      "Bash(python -c \":*)"
+    ]
+  }
+}
