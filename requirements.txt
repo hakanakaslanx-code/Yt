@@ -2,11 +2,14 @@ flask==2.3.3
 Werkzeug==2.3.7
 python-dotenv==1.0.0
 requests==2.31.0
-moviepy==2.2.1
+moviepy==2.1.2
 imageio==2.33.1
-imageio-ffmpeg==0.4.9
+imageio-ffmpeg==0.6.0
+setuptools>=69.0.0
 google-auth==2.23.0
 google-auth-oauthlib==1.1.0
 google-auth-httplib2==0.1.1
 google-api-python-client==2.100.0
 replicate==0.31.0
+apscheduler==3.10.4
+pytz==2024.1

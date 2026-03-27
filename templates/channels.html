@@ -1,50 +1,109 @@
 {% extends "base.html" %}
 {% block title %}My Channels{% endblock %}
 
+{% block head %}
+<style>
+    .ch-card {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        transition: 0.2s;
+    }
+    .ch-card:hover { border-color: rgba(112,0,255,0.35); }
+    .ch-card.is-default { border-color: rgba(0,212,255,0.35); }
+
+    .ch-thumb {
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+    }
+    .ch-info { flex: 1; min-width: 160px; }
+    .ch-info h3 { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+    .ch-info p  { font-size: 0.78rem; opacity: 0.5; }
+
+    .ch-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .btn-sm { padding: 7px 14px; border-radius: 9px; font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; }
+    .btn-default-ch  { background: rgba(0,212,255,0.12); color: var(--accent2); border: 1px solid rgba(0,212,255,0.3); }
+    .btn-default-ch:hover { background: rgba(0,212,255,0.22); }
+    .btn-remove   { background: rgba(255,62,62,0.10); color: #ff6060; border: 1px solid rgba(255,62,62,0.25); }
+    .btn-remove:hover { background: rgba(255,62,62,0.20); }
+
+    .badge-default { background: rgba(0,212,255,0.15); color: var(--accent2); border: 1px solid rgba(0,212,255,0.3); padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; margin-left: 8px; vertical-align: middle; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <div>
         <h1>📺 My Channels</h1>
-        <p>Manage your connected YouTube channels and automation settings.</p>
+        <p>Bağlı YouTube kanalları. Her schedule farklı bir kanala yükleyebilir.</p>
     </div>
+    <a href="/login/youtube" class="btn-primary" style="text-decoration:none;">+ Kanal Ekle</a>
 </div>
 
-{% if not yt_connected %}
-<div style="background:rgba(112,0,255,0.06);border:1px solid rgba(112,0,255,0.2);border-radius:18px;padding:40px;text-align:center;margin-bottom:30px;">
-    <h2>Connect Your YouTube Account</h2>
-    <p style="opacity:0.5;margin:10px 0 20px;">Link your Google account to manage channels and auto-upload AI videos.</p>
-    <a href="/login/youtube" class="btn-primary">▶ Connect YouTube</a>
+{% if channels %}
+{% for ch in channels %}
+<div class="ch-card {% if ch.is_default %}is-default{% endif %}">
+    {% if ch.thumbnail %}
+    <img class="ch-thumb" src="{{ ch.thumbnail }}" alt="{{ ch.name }}">
+    {% else %}
+    <div class="ch-thumb" style="background:rgba(112,0,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;">📺</div>
+    {% endif %}
+
+    <div class="ch-info">
+        <h3>
+            {{ ch.name }}
+            {% if ch.is_default %}<span class="badge-default">Default</span>{% endif %}
+        </h3>
+        <p>{{ ch.subs | default('?') }} abone &nbsp;·&nbsp; {{ ch.videos | default('?') }} video</p>
+    </div>
+
+    <div class="ch-actions">
+        {% if not ch.is_default %}
+        <button class="btn-sm btn-default-ch" onclick="setDefault('{{ ch.slug }}')">⭐ Default Yap</button>
+        {% endif %}
+        <button class="btn-sm btn-remove" onclick="removeChannel('{{ ch.slug }}', '{{ ch.name }}')">🗑 Kaldır</button>
+    </div>
 </div>
+{% endfor %}
+
 {% else %}
-{% if yt_channel %}
-<div class="glass-card" style="margin-bottom:24px;border-color:rgba(0,255,136,0.22);">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-            <h2>{{ yt_channel.name }}</h2>
-            <p style="opacity:0.5;margin-top:4px;">{{ yt_channel.subs }} subscribers · {{ yt_channel.videos }} videos</p>
-        </div>
-        <span style="color:#00ff88;font-weight:600;font-size:0.9rem;">● Connected</span>
-    </div>
+<div style="background:rgba(112,0,255,0.06);border:1px solid rgba(112,0,255,0.2);border-radius:18px;padding:50px;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:16px;">📺</div>
+    <h2>Henüz kanal bağlanmadı</h2>
+    <p style="opacity:0.5;margin:10px 0 24px;">YouTube hesabını bağla, videolar otomatik yüklensin.</p>
+    <a href="/login/youtube" class="btn-primary" style="text-decoration:none;">▶ Kanal Bağla</a>
 </div>
-{% endif %}
 {% endif %}
 
-<h3>Active Channels</h3>
-<div class="grid-auto">
-    {% for ch in channels %}
-    <div class="glass-card">
-        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;">
-            <div>
-                <h2 style="font-size:1.05rem;">{{ ch.name }}</h2>
-                <p style="opacity:0.5;font-size:0.83rem;margin-top:4px;">{{ ch.subs }} Subscribers</p>
-            </div>
-            <span class="badge badge-{{ ch.status|lower }}">{{ ch.status }}</span>
-        </div>
-        <div style="display:flex;gap:10px;">
-            <button class="btn-ghost" style="flex:1;">Analytics</button>
-            <button class="btn-ghost" style="flex:1;">Settings</button>
-        </div>
-    </div>
-    {% endfor %}
+<div style="margin-top:32px;padding:20px;background:var(--glass);border:1px solid var(--border);border-radius:14px;font-size:0.85rem;opacity:0.6;">
+    <strong>Nasıl çalışır?</strong> Birden fazla Google hesabı bağlayabilirsin. Her Schedules veya video üretiminde
+    hangi kanala yükleneceğini seçebilirsin. Default kanal, kanal seçilmeden tetiklenen işlemler için kullanılır.
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setDefault(slug) {
+    fetch('/api/channels/default/' + slug, {method:'POST'})
+        .then(r => r.json())
+        .then(d => { if(d.ok) location.reload(); else alert(d.error); });
+}
+
+function removeChannel(slug, name) {
+    if (!confirm('"' + name + '" kanalını kaldır? Token silinecek.')) return;
+    fetch('/api/channels/remove/' + slug, {method:'POST'})
+        .then(r => r.json())
+        .then(d => { if(d.ok) location.reload(); else alert(d.error); });
+}
+</script>
 {% endblock %}

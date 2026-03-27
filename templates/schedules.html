@@ -1,0 +1,704 @@
+{% extends "base.html" %}
+{% block title %}Schedules{% endblock %}
+
+{% block head %}
+<style>
+    .sched-card {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        animation: fadeUp 0.3s ease;
+        transition: 0.2s;
+    }
+    .sched-card:hover { border-color: rgba(112,0,255,0.5); }
+    .sched-card.paused { border-left-color: rgba(255,255,255,0.15); opacity: 0.65; }
+
+    .sched-info { flex: 1; min-width: 200px; }
+    .sched-info h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .sched-info .meta { font-size: 0.78rem; opacity: 0.5; display: flex; gap: 14px; flex-wrap: wrap; }
+
+    .sched-time {
+        text-align: center;
+        min-width: 130px;
+    }
+    .sched-time .clock {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--accent2);
+        line-height: 1.1;
+    }
+    .sched-time .days {
+        font-size: 0.72rem;
+        opacity: 0.55;
+        margin-top: 3px;
+    }
+    .sched-time .next {
+        font-size: 0.7rem;
+        color: #00ff88;
+        margin-top: 4px;
+    }
+
+    .sched-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .btn-run {
+        background: rgba(0,255,136,0.1);
+        color: #00ff88;
+        border: 1px solid rgba(0,255,136,0.3);
+        padding: 7px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+    .btn-run:hover { background: rgba(0,255,136,0.2); }
+
+    .btn-edit {
+        background: rgba(112,0,255,0.1);
+        color: var(--accent);
+        border: 1px solid rgba(112,0,255,0.3);
+        padding: 7px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.8rem;
+        transition: 0.2s;
+    }
+    .btn-edit:hover { background: rgba(112,0,255,0.2); }
+
+    .btn-del {
+        background: rgba(255,62,62,0.07);
+        color: #ff4444;
+        border: 1px solid rgba(255,62,62,0.25);
+        padding: 7px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.8rem;
+        transition: 0.2s;
+    }
+    .btn-del:hover { background: rgba(255,62,62,0.18); }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute; inset: 0;
+        background: rgba(255,255,255,0.12);
+        border-radius: 22px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .slider:before {
+        content: '';
+        position: absolute;
+        width: 16px; height: 16px;
+        left: 3px; bottom: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.3s;
+    }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    /* Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(6px);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+        background: #0f1016;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 32px;
+        width: 100%;
+        max-width: 520px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    .modal-box h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+
+    .day-pills { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px; }
+    .day-pill {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        transition: 0.2s;
+        user-select: none;
+    }
+    .day-pill.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .style-pills2 { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px; }
+    .style-pill2 {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        padding: 5px 13px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .style-pill2.active, .style-pill2:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .time-input-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 6px;
+    }
+    .time-input-wrap input[type=number] {
+        width: 80px;
+        text-align: center;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    .time-input-wrap .colon { font-size: 1.4rem; opacity: 0.6; }
+    .tz-badge {
+        font-size: 0.75rem;
+        color: var(--accent2);
+        background: rgba(0,212,255,0.08);
+        border: 1px solid rgba(0,212,255,0.2);
+        padding: 4px 10px;
+        border-radius: 8px;
+    }
+
+    .empty-sched { text-align: center; padding: 80px 20px; opacity: 0.35; }
+    .empty-sched .icon { font-size: 3.5rem; margin-bottom: 16px; }
+
+    /* Genre quick buttons */
+    .genre-btn {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        padding: 5px 11px;
+        border-radius: 20px;
+        font-size: 0.76rem;
+        cursor: pointer;
+        transition: 0.18s;
+        color: var(--text);
+        font-family: inherit;
+    }
+    .genre-btn:hover, .genre-btn.active {
+        background: rgba(124,58,255,0.2);
+        border-color: var(--accent);
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>🗓 Schedules</h1>
+        <p>Automated video production on Eastern Time (New York / Georgia).</p>
+    </div>
+    <button class="btn-primary" onclick="openModal()">+ New Schedule</button>
+</div>
+
+<!-- ── Days to Fill (Bulk) ─────────────────────────── -->
+<div class="glass-card" style="margin-bottom:28px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+        <span style="font-size:1.4rem;">📅</span>
+        <div>
+            <h2 style="font-size:1rem;margin-bottom:2px;">Bulk Schedule — Days to Fill</h2>
+            <p style="font-size:0.78rem;color:var(--muted);">Kanalları seç, kaç gün doldurmak istediğini gir — sistem her gün otomatik video üretir.</p>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start;">
+
+        <!-- Genre -->
+        <div>
+            <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;font-weight:600;">Müzik & Genre</p>
+            <input class="form-input" type="text" id="bulk-genre"
+                   placeholder="smooth jazz, afro house...">
+            <div id="bulk-genre-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+                <button class="genre-btn" onclick="setBulkGenre(this,'smooth jazz saxophone late night')">🎷 Jazz</button>
+                <button class="genre-btn" onclick="setBulkGenre(this,'lofi hip hop chill beats')">🎧 Lofi</button>
+                <button class="genre-btn" onclick="setBulkGenre(this,'80s retro synthwave neon drive nostalgia')">📼 80s</button>
+                <button class="genre-btn" onclick="setBulkGenre(this,'afro house deep bass warm sunset')">🌍 Afro</button>
+                <button class="genre-btn" onclick="setBulkGenre(this,'cyberpunk synthwave neon')">🌆 Cyber</button>
+                <button class="genre-btn" onclick="setBulkGenre(this,'classical piano emotional strings')">🎹 Classical</button>
+                <button class="genre-btn" onclick="setBulkGenre(this,'deep house melodic progressive sunset')">🏖️ Deep House</button>
+                <button class="genre-btn" onclick="setBulkGenre(this,'ambient meditation zen nature soundscape')">🧘 Ambient</button>
+            </div>
+        </div>
+
+        <!-- Channels -->
+        <div>
+            <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;font-weight:600;">Kanallar</p>
+            {% if channels %}
+            <div id="bulk-channels" style="display:flex;flex-direction:column;gap:8px;">
+                {% for ch in channels %}
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;transition:0.18s;"
+                       onmouseover="this.style.borderColor='rgba(124,58,255,0.4)'"
+                       onmouseout="this.style.borderColor='var(--border)'">
+                    <input type="checkbox" value="{{ ch.slug }}"
+                           style="width:16px;height:16px;accent-color:var(--accent);"
+                           onchange="updateBulkPreview()">
+                    <div>
+                        <div style="font-weight:600;font-size:0.88rem;">{{ ch.name }}</div>
+                        <div style="font-size:0.72rem;color:var(--muted);">{{ ch.subs }} subs</div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="color:var(--muted);font-size:0.85rem;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;">
+                    <input type="checkbox" value="" checked
+                           style="width:16px;height:16px;accent-color:var(--accent);"
+                           onchange="updateBulkPreview()">
+                    <div style="font-weight:600;">Default Kanal</div>
+                </label>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Days + Time + Preview -->
+        <div>
+            <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px;font-weight:600;">Dolduracak Gün Sayısı</p>
+            <input class="form-input" type="number" id="bulk-days" value="30" min="1" max="365"
+                   oninput="updateBulkPreview()"
+                   style="font-size:1.4rem;font-weight:700;text-align:center;padding:12px;">
+
+            <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:12px 0 6px;font-weight:600;">Günlük Video Sayısı</p>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="genre-btn" onclick="setVpd(1,this)" id="vpd-1" style="padding:8px 16px;font-size:0.9rem;">1</button>
+                <button class="genre-btn" onclick="setVpd(2,this)" id="vpd-2" style="padding:8px 16px;font-size:0.9rem;">2</button>
+                <button class="genre-btn" onclick="setVpd(3,this)" id="vpd-3" style="padding:8px 16px;font-size:0.9rem;">3</button>
+                <button class="genre-btn active" onclick="setVpd(4,this)" id="vpd-4" style="padding:8px 16px;font-size:0.9rem;">4</button>
+                <button class="genre-btn" onclick="setVpd(6,this)" id="vpd-6" style="padding:8px 16px;font-size:0.9rem;">6</button>
+            </div>
+            <input type="hidden" id="bulk-vpd" value="4">
+
+            <p style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:12px 0 6px;font-weight:600;">Yayın Saatleri <span style="color:var(--accent2);font-size:0.7rem;">(Eastern Time)</span></p>
+            <div id="bulk-time-slots" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+            <!-- Preview -->
+            <div id="bulk-preview" style="margin-top:14px;padding:12px;background:rgba(124,58,255,0.08);border:1px solid rgba(124,58,255,0.2);border-radius:10px;font-size:0.82rem;display:none;">
+                <div id="bulk-preview-text" style="color:#fff;font-weight:600;"></div>
+                <div id="bulk-preview-sub" style="color:var(--muted);margin-top:3px;font-size:0.75rem;"></div>
+            </div>
+
+            <button class="btn-primary" onclick="createBulkSchedule()"
+                    style="width:100%;margin-top:12px;justify-content:center;">
+                ⚡ Schedule Oluştur
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="sched-list">
+{% if schedules %}
+    {% for s in schedules %}
+    <div class="sched-card {% if not s.enabled %}paused{% endif %}" id="card-{{ s.id }}">
+        <div class="sched-info">
+            <h4>{{ s.name }}</h4>
+            <div class="meta">
+                <span>Genre: {{ s.genre }}</span>
+                <span>Style: {{ s.style }}</span>
+                <span>Runs: {{ s.run_count }}</span>
+                {% if s.last_run %}<span>Last: {{ s.last_run }}</span>{% endif %}
+            </div>
+        </div>
+
+        <div class="sched-time">
+            <div class="clock">{{ '%02d:%02d'|format(s.time_hour, s.time_minute) }}</div>
+            <div class="days">
+                {% if s.days_of_week == '*' %}Every Day{% else %}{{ s.days_of_week | replace('0','Mon') | replace('1','Tue') | replace('2','Wed') | replace('3','Thu') | replace('4','Fri') | replace('5','Sat') | replace('6','Sun') }}{% endif %}
+            </div>
+            <div class="next">Next: {{ s.next_run }}</div>
+        </div>
+
+        <div class="sched-actions">
+            <label class="switch" title="{{ 'Pause' if s.enabled else 'Activate' }}">
+                <input type="checkbox" {% if s.enabled %}checked{% endif %}
+                       onchange="toggleSched('{{ s.id }}', this.checked)">
+                <span class="slider"></span>
+            </label>
+            <button class="btn-run" onclick="runNow('{{ s.id }}')">▶ Run Now</button>
+            <button class="btn-edit" onclick="editSched('{{ s.id }}','{{ s.name }}','{{ s.genre }}','{{ s.style }}','{{ s.days_of_week }}',{{ s.time_hour }},{{ s.time_minute }},{{ s.lyrics_enabled|lower }})">Edit</button>
+            <button class="btn-del" onclick="deleteSched('{{ s.id }}')">✕</button>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-sched">
+        <div class="icon">🗓</div>
+        <h3>No schedules yet</h3>
+        <p style="margin-top:8px;font-size:0.88rem;">Click "+ New Schedule" to automate video production.</p>
+    </div>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+    <div class="modal-box">
+        <h3 id="modal-title">New Schedule</h3>
+        <input type="hidden" id="edit-id" value="">
+
+        <label class="form-label">Schedule Name</label>
+        <input class="form-input" type="text" id="sched-name" placeholder="e.g. Evening Lofi Drop">
+
+        <label class="form-label">Genre / Vibe</label>
+        <input class="form-input" type="text" id="sched-genre" placeholder="e.g. Dark Rain Cyberpunk Lofi">
+
+        <label class="form-label">Style</label>
+        <div class="style-pills2" id="style-pills">
+            <div class="style-pill2 active" onclick="pickStyle(this,'Cinematic')">Cinematic</div>
+            <div class="style-pill2" onclick="pickStyle(this,'Anime')">Anime</div>
+            <div class="style-pill2" onclick="pickStyle(this,'Cyberpunk')">Cyberpunk</div>
+            <div class="style-pill2" onclick="pickStyle(this,'Realistic')">Realistic</div>
+            <div class="style-pill2" onclick="pickStyle(this,'Digital Art')">Digital Art</div>
+        </div>
+        <input type="hidden" id="sched-style" value="Cinematic">
+
+        <label class="form-label">Days</label>
+        <div class="day-pills" id="day-pills">
+            <div class="day-pill active" onclick="toggleAll(this)" id="pill-all" data-val="*">Every Day</div>
+            <div class="day-pill" onclick="toggleDay(this)" data-val="0">Mon</div>
+            <div class="day-pill" onclick="toggleDay(this)" data-val="1">Tue</div>
+            <div class="day-pill" onclick="toggleDay(this)" data-val="2">Wed</div>
+            <div class="day-pill" onclick="toggleDay(this)" data-val="3">Thu</div>
+            <div class="day-pill" onclick="toggleDay(this)" data-val="4">Fri</div>
+            <div class="day-pill" onclick="toggleDay(this)" data-val="5">Sat</div>
+            <div class="day-pill" onclick="toggleDay(this)" data-val="6">Sun</div>
+        </div>
+        <input type="hidden" id="sched-days" value="*">
+
+        <label class="form-label">Time <span class="tz-badge">Eastern Time — New York / Georgia</span></label>
+        <div class="time-input-wrap">
+            <input type="number" id="sched-hour" min="0" max="23" value="18" placeholder="HH">
+            <span class="colon">:</span>
+            <input type="number" id="sched-minute" min="0" max="59" value="0" placeholder="MM">
+        </div>
+
+        <label class="form-label" style="margin-top:16px;">Minimum Video Süresi</label>
+        <select class="form-input" id="sched-duration">
+            <option value="0">Suno'nun ürettiği kadar (~2-3 dk)</option>
+            <option value="300">Min 5 dakika</option>
+            <option value="600">Min 10 dakika</option>
+            <option value="1800">Min 30 dakika</option>
+            <option value="3600">Min 1 saat</option>
+            <option value="7200">Min 2 saat</option>
+            <option value="10800">Min 3 saat</option>
+        </select>
+
+        {% if channels %}
+        <label class="form-label" style="margin-top:16px;">YouTube Kanalı</label>
+        <select class="form-input" id="sched-channel">
+            <option value="">Default Kanal</option>
+            {% for ch in channels %}
+            <option value="{{ ch.slug }}">{{ ch.name }}{% if ch.is_default %} ★{% endif %}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+
+        <label class="form-label" style="margin-top:18px;">
+            <input type="checkbox" id="sched-lyrics" checked style="margin-right:8px;">
+            Lyrics Sync
+        </label>
+
+        <div style="display:flex;gap:12px;margin-top:24px;">
+            <button class="btn-primary" onclick="saveSchedule()" style="flex:1;">Save Schedule</button>
+            <button class="btn-ghost" onclick="closeModal()" style="flex:1;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Bulk Schedule ──────────────────────────────────────────────────────────────
+
+// vpd'ye göre önerilen varsayılan saatler
+const DEFAULT_TIMES = {
+    1: [{h:8,  m:0}],
+    2: [{h:8,  m:0}, {h:20, m:0}],
+    3: [{h:8,  m:0}, {h:14, m:0}, {h:20, m:0}],
+    4: [{h:7,  m:0}, {h:12, m:0}, {h:17, m:0}, {h:22, m:0}],
+    6: [{h:6,  m:0}, {h:9,  m:0}, {h:12, m:0}, {h:15, m:0}, {h:18, m:0}, {h:21, m:0}],
+};
+
+const INP_STYLE = 'width:58px;text-align:center;background:rgba(0,0,0,0.35);border:1px solid var(--border);border-radius:9px;padding:8px 6px;color:var(--text);font-family:inherit;font-size:1rem;font-weight:700;';
+
+function renderTimeSlots(vpd) {
+    const container = document.getElementById('bulk-time-slots');
+    const defaults  = DEFAULT_TIMES[vpd] || DEFAULT_TIMES[1];
+    container.innerHTML = '';
+    for (let i = 0; i < vpd; i++) {
+        const def = defaults[i] || {h: (8 + i * Math.floor(24/vpd)) % 24, m: 0};
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;';
+        row.innerHTML = `
+            <span style="font-size:0.72rem;color:var(--muted);width:44px;flex-shrink:0;">Slot ${i+1}</span>
+            <input type="number" class="slot-hour" min="0" max="23" value="${def.h}"
+                   oninput="updateBulkPreview()" style="${INP_STYLE}">
+            <span style="font-size:1.1rem;opacity:0.5;line-height:1;">:</span>
+            <input type="number" class="slot-minute" min="0" max="59" value="${String(def.m).padStart(2,'0')}"
+                   oninput="updateBulkPreview()" style="${INP_STYLE}">
+            <span style="font-size:0.7rem;color:var(--accent2);margin-left:2px;">ET</span>`;
+        container.appendChild(row);
+    }
+    updateBulkPreview();
+}
+
+function getTimeSlots() {
+    const hours   = [...document.querySelectorAll('.slot-hour')].map(el => parseInt(el.value)||0);
+    const minutes = [...document.querySelectorAll('.slot-minute')].map(el => parseInt(el.value)||0);
+    return hours.map((h, i) => ({hour: h, minute: minutes[i]}));
+}
+
+function setBulkGenre(el, text) {
+    // Sadece genre butonlarındaki active'i kaldır — VPD butonlarına dokunma
+    document.querySelectorAll('#bulk-genre-row .genre-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('bulk-genre').value = text;
+    updateBulkPreview();
+}
+
+function setVpd(n, el) {
+    document.querySelectorAll('[id^="vpd-"]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('bulk-vpd').value = n;
+    renderTimeSlots(n);
+}
+
+function updateBulkPreview() {
+    const days    = parseInt(document.getElementById('bulk-days').value) || 0;
+    const vpd     = parseInt(document.getElementById('bulk-vpd').value)  || 1;
+    const checked = [...document.querySelectorAll('#bulk-channels input[type=checkbox]:checked, #bulk-channels ~ div input:checked')];
+    const chCount = Math.max(1, checked.length);
+    const total   = days * chCount * vpd;
+    const prev    = document.getElementById('bulk-preview');
+    const txt     = document.getElementById('bulk-preview-text');
+    const sub     = document.getElementById('bulk-preview-sub');
+    if (days > 0) {
+        txt.textContent = `${chCount} kanal × ${days} gün × ${vpd} video/gün = ${total} schedule`;
+        const slots = getTimeSlots();
+        const times = slots.map(s => `${String(s.hour).padStart(2,'0')}:${String(s.minute).padStart(2,'0')}`);
+        sub.textContent = `Yayın saatleri (ET): ${times.join(' · ')}`;
+        prev.style.display = '';
+    } else {
+        prev.style.display = 'none';
+    }
+}
+
+function createBulkSchedule() {
+    const genre = document.getElementById('bulk-genre').value.trim();
+    const days  = parseInt(document.getElementById('bulk-days').value) || 0;
+    const vpd   = parseInt(document.getElementById('bulk-vpd').value)  || 1;
+    if (!genre) { alert('Genre girin!'); return; }
+    if (days < 1) { alert('Gün sayısı en az 1 olmalı!'); return; }
+
+    const slots  = getTimeSlots();
+    const allCbs = document.querySelectorAll('#bulk-channels input[type=checkbox]');
+    let slugs = [...allCbs].filter(cb => cb.checked).map(cb => cb.value);
+    if (slugs.length === 0) slugs = [''];
+
+    const btn = event.target;
+    btn.textContent = '⏳ Oluşturuluyor...'; btn.disabled = true;
+
+    fetch('/api/schedules/bulk', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            genre, days_of_week: '*', style: 'Cinematic', min_duration: 0,
+            channel_slugs: slugs, videos_per_day: vpd, time_slots: slots
+        })
+    }).then(r => r.json()).then(d => {
+        btn.textContent = '⚡ Schedule Oluştur'; btn.disabled = false;
+        if (d.ok) {
+            alert(`✓ ${d.created} schedule oluşturuldu!`);
+            location.reload();
+        } else {
+            alert('Hata: ' + (d.error || 'Bilinmeyen'));
+        }
+    }).catch(() => { btn.textContent = '⚡ Schedule Oluştur'; btn.disabled = false; });
+}
+
+// Sayfa yüklenince varsayılan vpd=4 için slot'ları oluştur
+document.addEventListener('DOMContentLoaded', () => renderTimeSlots(4));
+
+// ── State ──────────────────────────────────────────────────────────────────────
+const DAY_NAMES = {0:'Mon',1:'Tue',2:'Wed',3:'Thu',4:'Fri',5:'Sat',6:'Sun'};
+
+// ── Modal ──────────────────────────────────────────────────────────────────────
+function openModal(reset = true) {
+    if (reset) {
+        document.getElementById('edit-id').value = '';
+        document.getElementById('modal-title').textContent = 'New Schedule';
+        document.getElementById('sched-name').value = '';
+        document.getElementById('sched-genre').value = '';
+        document.getElementById('sched-hour').value = 18;
+        document.getElementById('sched-minute').value = 0;
+        document.getElementById('sched-lyrics').checked = true;
+        setStyle('Cinematic');
+        setDays('*');
+    }
+    document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+}
+document.getElementById('modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal')) closeModal();
+});
+
+// ── Style pills ────────────────────────────────────────────────────────────────
+function pickStyle(el, val) {
+    document.querySelectorAll('.style-pill2').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('sched-style').value = val;
+}
+function setStyle(val) {
+    document.querySelectorAll('.style-pill2').forEach(p => {
+        p.classList.toggle('active', p.textContent.trim() === val);
+    });
+    document.getElementById('sched-style').value = val;
+}
+
+// ── Day pills ──────────────────────────────────────────────────────────────────
+function toggleAll(el) {
+    document.querySelectorAll('#day-pills .day-pill:not(#pill-all)').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('sched-days').value = '*';
+}
+function toggleDay(el) {
+    document.getElementById('pill-all').classList.remove('active');
+    el.classList.toggle('active');
+    const active = [...document.querySelectorAll('#day-pills .day-pill:not(#pill-all).active')].map(p => p.dataset.val);
+    if (active.length === 0) {
+        document.getElementById('pill-all').classList.add('active');
+        document.getElementById('sched-days').value = '*';
+    } else {
+        document.getElementById('sched-days').value = active.join(',');
+    }
+}
+function setDays(val) {
+    document.querySelectorAll('#day-pills .day-pill').forEach(p => p.classList.remove('active'));
+    if (val === '*') {
+        document.getElementById('pill-all').classList.add('active');
+    } else {
+        const parts = val.split(',');
+        document.querySelectorAll('#day-pills .day-pill:not(#pill-all)').forEach(p => {
+            if (parts.includes(p.dataset.val)) p.classList.add('active');
+        });
+    }
+    document.getElementById('sched-days').value = val;
+}
+
+// ── Edit ───────────────────────────────────────────────────────────────────────
+function editSched(id, name, genre, style, days, hour, minute, lyrics) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('modal-title').textContent = 'Edit Schedule';
+    document.getElementById('sched-name').value = name;
+    document.getElementById('sched-genre').value = genre;
+    document.getElementById('sched-hour').value = hour;
+    document.getElementById('sched-minute').value = minute;
+    document.getElementById('sched-lyrics').checked = lyrics;
+    setStyle(style);
+    setDays(days);
+    openModal(false);
+}
+
+// ── Save ───────────────────────────────────────────────────────────────────────
+function saveSchedule() {
+    const id    = document.getElementById('edit-id').value;
+    const hour  = parseInt(document.getElementById('sched-hour').value);
+    const min   = parseInt(document.getElementById('sched-minute').value);
+    const name  = document.getElementById('sched-name').value.trim();
+    const genre = document.getElementById('sched-genre').value.trim();
+    if (!name)  return alert('Please enter a schedule name.');
+    if (!genre) return alert('Please enter a genre / vibe.');
+    if (isNaN(hour) || hour < 0 || hour > 23) return alert('Enter a valid hour (0–23).');
+    if (isNaN(min)  || min  < 0 || min  > 59) return alert('Enter a valid minute (0–59).');
+
+    const chEl = document.getElementById('sched-channel');
+    const payload = {
+        name,
+        genre,
+        style:          document.getElementById('sched-style').value,
+        days_of_week:   document.getElementById('sched-days').value,
+        time_hour:      hour,
+        time_minute:    min,
+        lyrics_enabled: document.getElementById('sched-lyrics').checked,
+        channel_slug:   chEl ? chEl.value : '',
+        min_duration:   parseInt(document.getElementById('sched-duration').value) || 0,
+        enabled:        true,
+    };
+
+    const isEdit = id !== '';
+    const url    = isEdit ? `/api/schedules/${id}` : '/api/schedules';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+        .then(r => r.json())
+        .then(d => {
+            if (d.error) { alert('Error: ' + d.error); return; }
+            closeModal();
+            location.reload();
+        })
+        .catch(() => alert('Network error.'));
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────────
+function toggleSched(id, enabled) {
+    fetch(`/api/schedules/${id}/toggle`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ enabled })
+    }).then(r => r.json()).then(d => {
+        const card = document.getElementById('card-' + id);
+        if (card) card.classList.toggle('paused', !enabled);
+    });
+}
+
+function runNow(id) {
+    fetch(`/api/schedules/${id}/run_now`, { method: 'POST' })
+        .then(r => r.json())
+        .then(d => alert(d.message || d.error));
+}
+
+function deleteSched(id) {
+    if (!confirm('Delete this schedule?')) return;
+    fetch(`/api/schedules/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) document.getElementById('card-' + id).remove();
+        });
+}
+</script>
+{% endblock %}
